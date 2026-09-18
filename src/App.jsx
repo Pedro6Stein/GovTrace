@@ -1,5 +1,6 @@
 import { Container, Typography, Box, Button, Card, CardContent, Divider, Stack } from '@mui/material';
 import { textos } from './textos/textos';
+import { buscarDespesas } from './servicos/apiTce';
 import {
   IconeNormal,
   IconeAtencao,
@@ -26,7 +27,7 @@ function App() {
           <Divider sx={{ mb: 2 }} />
           <Typography variant="body1" color="primary">Cor Institucional (Primária) - #2C5E43</Typography>
           <Typography variant="body1" color="secondary">Cor de Destaque (Secundária) - #C98B22</Typography>
-          
+
           <Box sx={{ mt: 3, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
             <Typography variant="body2" color="text.secondary">
               Teste da variante tabular-nums para tabelas:
@@ -46,7 +47,16 @@ function App() {
           <Typography variant="h2" gutterBottom>Botões (Área mínima de 44px)</Typography>
           <Divider sx={{ mb: 2 }} />
           <Stack direction="row" spacing={2} flexWrap="wrap" useFlexGap>
-            <Button variant="contained" color="primary" startIcon={<IconePesquisa />}>
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<IconePesquisa />}
+              onClick={async () => {
+                console.log('Buscando dados...');
+                const dados = await buscarDespesas('Bragança Paulista', '2023', '1');
+                console.log('Dados Normalizados:', dados);
+              }}
+            >
               {textos.botoes.pesquisar}
             </Button>
             <Button variant="outlined" color="secondary" startIcon={<IconeExportar />}>
@@ -68,12 +78,12 @@ function App() {
               <IconeNormal />
               <Typography fontWeight={500}>{textos.status.normal}</Typography>
             </Box>
-            
+
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'warning.main' }}>
               <IconeAtencao />
               <Typography fontWeight={500}>{textos.status.atencao}</Typography>
             </Box>
-            
+
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, color: 'error.main' }}>
               <IconeErro />
               <Typography fontWeight={500}>{textos.status.critico}</Typography>
