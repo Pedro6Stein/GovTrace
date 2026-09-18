@@ -11,6 +11,29 @@ import {
   IconeInfo
 } from './icones/icones';
 
+// Importe as funções no topo do App.jsx
+import { calcularTotaisGerais, gerarRankingFornecedores, gerarInsightConcentracao } from './utilitarios/analise';
+import { normalizarDespesas } from './utilitarios/normalizacao'; // Certifique-se de importar o normalizador
+
+// E dentro do onClick do botão de teste:
+const resposta = await fetch('https://transparencia.tce.sp.gov.br/api/json/despesas/braganca-paulista/2023/1');
+const dadosBrutos = await resposta.json();
+
+// 1. O Escudo (Normaliza)
+const dadosLimpos = normalizarDespesas(dadosBrutos);
+
+// 2. O Motor Matemático (Calcula)
+const totais = calcularTotaisGerais(dadosLimpos);
+const ranking = gerarRankingFornecedores(dadosLimpos);
+const insight = gerarInsightConcentracao(ranking, totais.valorTotal);
+
+console.log("=== RELATÓRIO DO MOTOR GOVTRACE ===");
+console.log("Total Gasto (Geral): R$", totais.valorTotal.toLocaleString('pt-BR'));
+console.log("Quantidade de Fornecedores Privados:", ranking.length);
+console.log(insight.mensagemPrincipal);
+console.log("💡 Insight:", insight.insightEducativo);
+
+
 function App() {
   return (
     <Container maxWidth="md" sx={{ py: 4 }}>
