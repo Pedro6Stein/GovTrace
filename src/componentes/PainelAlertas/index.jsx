@@ -38,10 +38,10 @@ export default function PainelAlertas({ insights }) {
   return (
     <Box sx={{ mb: 6 }}>
       <Typography variant="h2" sx={{ fontSize: '1.25rem', fontWeight: 600, mb: 1 }}>
-        Auditoria Algorítmica (O que a I.A. encontrou?)
+        Auditoria Algorítmica
       </Typography>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
-        Nossos motores analisam o volume e a temporalidade dos gastos cruzando com parâmetros da ciência de dados.
+        Nossos motores analisam o volume e a temporalidade dos gastos cruzando com parâmetros matemáticos.
       </Typography>
 
       <Stack spacing={2}>
