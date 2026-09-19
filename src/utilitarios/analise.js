@@ -108,3 +108,28 @@ const ENTIDADES_IGNORADAS = [
       top5
     };
   };
+
+  /**
+ * Função: calcularDistribuicaoPorCategoria
+ * Objetivo: Pegar os milhões gastos e fatiar pelas áreas sociais para
+ * renderização no painel amigável do cidadão.
+ */
+export const calcularDistribuicaoPorCategoria = (despesas) => {
+  const categorias = new Map();
+  let totalMapeado = 0;
+
+  for (const despesa of despesas) {
+    const categoria = categorizarDespesa(despesa.orgao);
+    categorias.set(categoria, (categorias.get(categoria) || 0) + despesa.valor);
+    totalMapeado += despesa.valor;
+  }
+
+  // Converte para array, calcula o % de cada área e ordena da maior para a menor
+  return Array.from(categorias.entries())
+    .map(([nome, valor]) => ({
+      nome,
+      valor,
+      percentual: totalMapeado > 0 ? ((valor / totalMapeado) * 100).toFixed(1) : 0
+    }))
+    .sort((a, b) => b.valor - a.valor);
+};
