@@ -5,7 +5,7 @@ import { Box, FormControl, InputLabel, Select, MenuItem, Stack, Autocomplete, Te
 const anoAtual = new Date().getFullYear();
 const anos = Array.from({ length: 5 }, (_, i) => (anoAtual - i).toString());
 
-// Geração dinâmica e localizada dos meses
+// Geração dinâmica e localizada dos meses git
 const meses = Array.from({ length: 12 }, (_, i) => {
   const data = new Date(0, i);
   return {
@@ -49,6 +49,7 @@ export default function SeletorPeriodo({ filtros, onFiltroChange }) {
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
         
         <Autocomplete
+          id="seletor-municipio"
           fullWidth
           options={municipiosSP}
           value={filtros.municipio}

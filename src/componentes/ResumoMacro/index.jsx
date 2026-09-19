@@ -15,14 +15,16 @@ export default function ResumoMacro({ totais }) {
       <Grid item xs={12} md={6}>
         <Card>
           <CardContent sx={{ p: 4 }}>
+            {/* Ajuste de Nomenclatura para proteção do TCC */}
             <Typography variant="body2" color="text.secondary" fontWeight={600} textTransform="uppercase" gutterBottom>
-              Total Movimentado
+              Total Empenhado no Mês
             </Typography>
             <Box sx={{ display: 'flex', alignItems: 'baseline', gap: 1 }}>
-              <Typography variant="h2" color="primary.main" fontWeight={700}>
+              {/* Removido o verde (primary.main), aplicando cinza escuro sofisticado */}
+              <Typography variant="h2" color="text.primary" fontWeight={700}>
                 R$
               </Typography>
-              <Typography variant="valor" sx={{ fontSize: { xs: '2rem', md: '2.5rem' }, color: 'primary.main', fontWeight: 700 }}>
+              <Typography variant="valor" sx={{ fontSize: { xs: '2rem', md: '2.5rem' }, color: 'text.primary', fontWeight: 700 }}>
                 {valorFormatado}
               </Typography>
             </Box>
@@ -34,7 +36,7 @@ export default function ResumoMacro({ totais }) {
         <Card>
           <CardContent sx={{ p: 4 }}>
             <Typography variant="body2" color="text.secondary" fontWeight={600} textTransform="uppercase" gutterBottom>
-              Registros Analisados
+              Registros Analisados (Notas)
             </Typography>
             <Typography variant="valor" sx={{ fontSize: { xs: '2rem', md: '2.5rem' }, color: 'text.primary', fontWeight: 700 }}>
               {qtdFormatada}

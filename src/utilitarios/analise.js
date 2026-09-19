@@ -1,3 +1,5 @@
+import { categorizarDespesa } from './regrasCategorias';
+
 /**
  * GOVTRACE - MOTOR DE ANÁLISE TÉCNICA E ESTATÍSTICA
  * Equipe: Enzo Corcetti, Lucas Policene, Pedro Stein
