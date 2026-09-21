@@ -2,20 +2,23 @@ import { useEffect, useState } from 'react';
 
 import {
   Box,
-  CircularProgress,
   Container,
+  Fade,
   Paper,
   Stack,
+  Tab,
+  Tabs,
   Typography,
 } from '@mui/material';
+
+import AccountBalanceRoundedIcon from '@mui/icons-material/AccountBalanceRounded';
+import ManageSearchRoundedIcon from '@mui/icons-material/ManageSearchRounded';
+import PlagiarismRoundedIcon from '@mui/icons-material/PlagiarismRounded';
+import QueryStatsRoundedIcon from '@mui/icons-material/QueryStatsRounded';
 
 import Cabecalho from '../../componentes/Cabecalho';
 import Rodape from '../../componentes/Rodape';
 import SeletorPeriodo from '../../componentes/SeletorPeriodo';
-import ResumoMacro from '../../componentes/ResumoMacro';
-import DistribuicaoInvestimentos from '../../componentes/DistribuicaoInvestimentos';
-import PainelAlertas from '../../componentes/PainelAlertas';
-import TabelaEvidencias from '../../componentes/TabelaEvidencias';
 import SkeletonPainel from '../../componentes/SkeletonPainel';
 
 import { buscarDespesas } from '../../servicos/apiTce';
@@ -34,8 +37,7 @@ import {
   detectarMonopolioPorOrgao,
 } from '../../utilitarios/analiseAvancada';
 
-import { textos } from '../../textos/textos';
-
+// ─── Defaults dos insights quando os dados são insuficientes ─────────────────
 const INSIGHTS_PADRAO = {
   concentracao: {
     alerta: false,
@@ -43,27 +45,22 @@ const INSIGHTS_PADRAO = {
     insightEducativo:
       'Quantidade insuficiente de notas para calcular concentração de mercado.',
   },
-
   zScore: {
     alerta: false,
     titulo: 'Gastos Fora do Padrão',
     insightEducativo:
       'Base de dados reduzida. Impossível calcular curva normal.',
   },
-
   benford: {
     alerta: false,
     titulo: 'Teste de Lei de Benford',
-    insightEducativo:
-      'Poucos registros para análise de dígito natural.',
+    insightEducativo: 'Poucos registros para análise de dígito natural.',
   },
-
   fracionamento: {
     alerta: false,
     titulo: 'Chuva de Valores',
     insightEducativo: 'Sem anomalias repetitivas detectadas.',
   },
-
   monopolio: {
     alerta: false,
     titulo: 'Monopólio Departamental',
@@ -71,24 +68,67 @@ const INSIGHTS_PADRAO = {
   },
 };
 
+// ─── Definição das 4 abas ────────────────────────────────────────────────────
+const ABAS = [
+  {
+    id: 'cidade',
+    rotulo: 'A Cidade',
+    icone: AccountBalanceRoundedIcon,
+    descricao: 'Visão macro dos gastos municipais',
+  },
+  {
+    id: 'exploracao',
+    rotulo: 'Exploração',
+    icone: ManageSearchRoundedIcon,
+    descricao: 'Fornecedores e destinatários dos recursos',
+  },
+  {
+    id: 'auditoria',
+    rotulo: 'Auditoria Algorítmica',
+    icone: QueryStatsRoundedIcon,
+    descricao: 'Motores de análise estatística',
+  },
+  {
+    id: 'evidencias',
+    rotulo: 'Evidências',
+    icone: PlagiarismRoundedIcon,
+    descricao: 'Registros brutos para rastreabilidade',
+  },
+];
+
+// ─── Estado inicial dos filtros — SEMPRE dinâmico, NUNCA hardcoded ───────────
+// O SeletorPeriodo carrega as cidades do IBGE e o usuário escolhe.
+// Valores iniciais vazios forçam a seleção explícita antes de qualquer fetch.
+const FILTROS_INICIAIS = {
+  municipio: '',
+  ano: new Date().getFullYear().toString(),
+  mes: (new Date().getMonth() + 1).toString(),
+};
+
+// ─── Componente principal ─────────────────────────────────────────────────────
 export default function Painel() {
-  const [carregando, setCarregando] = useState(true);
+  // Estado de navegação entre abas
+  const [abaAtiva, setAbaAtiva] = useState(0);
+
+  // Estado de ciclo de vida da requisição
+  const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState(false);
+
+  // Dados brutos e derivados (calculados pelos motores)
   const [dadosBrutos, setDadosBrutos] = useState([]);
-  const [totais, setTotais] = useState({
-    valorTotal: 0,
-    totalRegistros: 0,
-  });
+  const [totais, setTotais] = useState({ valorTotal: 0, totalRegistros: 0 });
   const [distribuicao, setDistribuicao] = useState([]);
+  const [ranking, setRanking] = useState([]);
   const [insights, setInsights] = useState(null);
 
-  const [filtros, setFiltros] = useState({
-    municipio: 'Bragança Paulista',
-    ano: '2026',
-    mes: '1',
-  });
+  // Filtros dinâmicos — municipio é vazio no início (sem hardcode)
+  const [filtros, setFiltros] = useState(FILTROS_INICIAIS);
 
+  // ─── Efeito: re-executa toda vez que os filtros mudam ──────────────────────
   useEffect(() => {
+    // Não busca se o município ainda não foi selecionado
+    if (!filtros.municipio) return;
+
     const carregarDados = async () => {
       setCarregando(true);
       setErro(false);
@@ -97,56 +137,44 @@ export default function Painel() {
         const dados = await buscarDespesas(
           filtros.municipio,
           filtros.ano,
-          filtros.mes
+          filtros.mes,
         );
 
         setDadosBrutos(dados);
 
         if (!dados?.length) {
-          setTotais({
-            valorTotal: 0,
-            totalRegistros: 0,
-          });
-
+          setTotais({ valorTotal: 0, totalRegistros: 0 });
           setDistribuicao([]);
+          setRanking([]);
           setInsights(null);
-
           return;
         }
 
+        // ── Motores de análise (preservados integralmente) ──────────────────
         const calculoTotais = calcularTotaisGerais(dados);
         const novaDistribuicao = calcularDistribuicaoPorCategoria(dados);
-        const ranking = gerarRankingFornecedores(dados);
+        const novoRanking = gerarRankingFornecedores(dados);
 
         const novosInsights = {
           concentracao:
-            gerarInsightConcentracao(
-              ranking,
-              calculoTotais.valorTotal
-            ) || INSIGHTS_PADRAO.concentracao,
-
+            gerarInsightConcentracao(novoRanking, calculoTotais.valorTotal) ||
+            INSIGHTS_PADRAO.concentracao,
           zScore:
-            detectarOutliersZScore(dados) ||
-            INSIGHTS_PADRAO.zScore,
-
+            detectarOutliersZScore(dados) || INSIGHTS_PADRAO.zScore,
           benford:
-            analisarLeiBenford(dados) ||
-            INSIGHTS_PADRAO.benford,
-
+            analisarLeiBenford(dados) || INSIGHTS_PADRAO.benford,
           fracionamento:
-            detectarFracionamento(dados) ||
-            INSIGHTS_PADRAO.fracionamento,
-
+            detectarFracionamento(dados) || INSIGHTS_PADRAO.fracionamento,
           monopolio:
-            detectarMonopolioPorOrgao(dados) ||
-            INSIGHTS_PADRAO.monopolio,
+            detectarMonopolioPorOrgao(dados) || INSIGHTS_PADRAO.monopolio,
         };
 
         setTotais(calculoTotais);
         setDistribuicao(novaDistribuicao);
+        setRanking(novoRanking);
         setInsights(novosInsights);
       } catch (err) {
-        console.error('Falha ao buscar dados:', err);
+        console.error('[GovTrace] Falha ao buscar dados do TCE-SP:', err);
         setErro(true);
       } finally {
         setCarregando(false);
@@ -156,10 +184,49 @@ export default function Painel() {
     carregarDados();
   }, [filtros]);
 
+  // ─── Props compartilhadas entre as abas ────────────────────────────────────
+  const propsAbas = {
+    dadosBrutos,
+    totais,
+    distribuicao,
+    ranking,
+    insights,
+    filtros,
+  };
+
+  // ─── Renderização condicional do conteúdo ─────────────────────────────────
   const renderConteudo = () => {
+    if (!filtros.municipio) {
+      return (
+        <Paper
+          elevation={0}
+          sx={{
+            textAlign: 'center',
+            py: 12,
+            px: 4,
+            borderRadius: 4,
+            border: '2px dashed',
+            borderColor: 'divider',
+            bgcolor: 'background.paper',
+          }}
+        >
+          <AccountBalanceRoundedIcon
+            sx={{ fontSize: 56, color: 'primary.main', opacity: 0.4, mb: 2 }}
+          />
+          <Typography variant="h5" color="text.secondary" gutterBottom fontWeight={600}>
+            Selecione um município para começar
+          </Typography>
+          <Typography variant="body2" color="text.disabled" sx={{ maxWidth: 420, mx: 'auto' }}>
+            Escolha o município, o ano e o mês acima para carregar os dados
+            oficiais do Tribunal de Contas do Estado de São Paulo.
+          </Typography>
+        </Paper>
+      );
+    }
+
     if (carregando) {
       return (
-        <Box sx={{ py: 4 }}>
+        <Box sx={{ py: 2 }}>
           <SkeletonPainel />
         </Box>
       );
@@ -167,62 +234,118 @@ export default function Painel() {
 
     if (erro) {
       return (
-        <Box sx={{ textAlign: 'center', py: 10 }}>
-          <Typography color="error">
-            {textos.comum.erroGeral}
+        <Paper
+          elevation={0}
+          sx={{
+            textAlign: 'center',
+            py: 10,
+            px: 4,
+            borderRadius: 4,
+            border: '1px solid',
+            borderColor: 'error.light',
+            bgcolor: '#FEF2F2',
+          }}
+        >
+          <Typography variant="h5" color="error.main" gutterBottom fontWeight={600}>
+            Não foi possível consultar os dados
           </Typography>
-        </Box>
+          <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 400, mx: 'auto' }}>
+            O servidor do TCE-SP pode estar temporariamente indisponível.
+            Verifique sua conexão e tente novamente em alguns instantes.
+          </Typography>
+        </Paper>
       );
     }
 
     if (!dadosBrutos.length) {
       return (
         <Paper
+          elevation={1}
           sx={{
             textAlign: 'center',
             py: 10,
             px: 4,
             borderRadius: 4,
-            boxShadow: '0px 4px 24px rgba(0, 0, 0, 0.02)',
           }}
         >
-          <Typography
-            variant="h5"
-            color="text.secondary"
-            gutterBottom
-          >
+          <Typography variant="h5" color="text.secondary" gutterBottom fontWeight={600}>
             Sem Registros Oficiais
           </Typography>
-
-          <Typography color="text.secondary">
-            O Tribunal de Contas (TCE-SP) ainda não disponibilizou
-            notas fiscais ou empenhos para{' '}
-            <strong>{filtros.municipio}</strong> no mês de{' '}
+          <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 460, mx: 'auto' }}>
+            O Tribunal de Contas (TCE-SP) ainda não disponibilizou notas fiscais
+            ou empenhos para{' '}
+            <strong>{filtros.municipio}</strong> no período de{' '}
             <strong>
               {filtros.mes}/{filtros.ano}
             </strong>
-            . Isso é comum em meses muito recentes ou em
-            fechamento de balanço.
+            . Isso é comum em meses muito recentes ou em fechamento de balanço.
           </Typography>
         </Paper>
       );
     }
 
+    // ── Painel com abas ──────────────────────────────────────────────────────
     return (
-      <Stack spacing={0}>
-        <ResumoMacro totais={totais} />
+      <Box>
+        {/* Barra de abas */}
+        <Paper
+          elevation={0}
+          sx={{
+            borderRadius: 3,
+            border: '1px solid',
+            borderColor: 'divider',
+            mb: 3,
+            overflow: 'hidden',
+          }}
+        >
+          <Tabs
+            value={abaAtiva}
+            onChange={(_, novaAba) => setAbaAtiva(novaAba)}
+            variant="scrollable"
+            scrollButtons="auto"
+            textColor="primary"
+            indicatorColor="primary"
+            aria-label="Abas de navegação do GovTrace"
+            sx={{
+              bgcolor: 'background.paper',
+              px: { xs: 1, sm: 2 },
+            }}
+          >
+            {ABAS.map((aba, idx) => {
+              const Icone = aba.icone;
+              return (
+                <Tab
+                  key={aba.id}
+                  id={`aba-${aba.id}`}
+                  aria-controls={`painel-${aba.id}`}
+                  label={
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Icone fontSize="small" />
+                      <span>{aba.rotulo}</span>
+                    </Stack>
+                  }
+                />
+              );
+            })}
+          </Tabs>
+        </Paper>
 
-        <DistribuicaoInvestimentos
-          distribuicao={distribuicao}
-        />
-
-        <PainelAlertas insights={insights} />
-
-        <TabelaEvidencias despesas={dadosBrutos} />
-      </Stack>
+        {/* Painéis de conteúdo de cada aba */}
+        {ABAS.map((aba, idx) => (
+          <PainelAba
+            key={aba.id}
+            id={`painel-${aba.id}`}
+            aria-labelledby={`aba-${aba.id}`}
+            ativo={abaAtiva === idx}
+          >
+            <ConteudoAba id={aba.id} props={propsAbas} />
+          </PainelAba>
+        ))}
+      </Box>
     );
   };
 
+  // ─── Layout raiz ──────────────────────────────────────────────────────────
   return (
     <Box
       sx={{
@@ -236,12 +359,10 @@ export default function Painel() {
 
       <Container
         maxWidth="lg"
-        sx={{ flexGrow: 1 }}
+        component="main"
+        sx={{ flexGrow: 1, py: { xs: 2, sm: 3 } }}
       >
-        <SeletorPeriodo
-          filtros={filtros}
-          onFiltroChange={setFiltros}
-        />
+        <SeletorPeriodo filtros={filtros} onFiltroChange={setFiltros} />
 
         {renderConteudo()}
       </Container>
@@ -249,4 +370,128 @@ export default function Painel() {
       <Rodape />
     </Box>
   );
+}
+
+// ─── Componente auxiliar: wrapper de painel de aba com Fade ──────────────────
+function PainelAba({ children, ativo, id, 'aria-labelledby': labelledBy }) {
+  return (
+    <Box
+      role="tabpanel"
+      id={id}
+      aria-labelledby={labelledBy}
+      hidden={!ativo}
+    >
+      {ativo && (
+        <Fade in={ativo} timeout={300}>
+          <Box>{children}</Box>
+        </Fade>
+      )}
+    </Box>
+  );
+}
+
+// ─── Componente auxiliar: conteúdo provisório por aba ────────────────────────
+// ATENÇÃO: O interior de cada aba é provisório e será substituído
+// nas etapas seguintes da refatoração. A estrutura de rotas e
+// o fluxo de dados (propsAbas) já estão conectados e prontos.
+function ConteudoAba({ id, props }) {
+  const estiloPlaceholder = {
+    p: 4,
+    borderRadius: 3,
+    border: '2px dashed',
+    borderColor: 'primary.light',
+    bgcolor: 'background.paper',
+    textAlign: 'center',
+    opacity: 0.7,
+  };
+
+  switch (id) {
+    case 'cidade':
+      return (
+        <Box sx={estiloPlaceholder}>
+          <AccountBalanceRoundedIcon
+            sx={{ fontSize: 40, color: 'primary.main', mb: 1 }}
+          />
+          <Typography variant="h6" color="primary.main" fontWeight={600}>
+            Aba 1 — "A Cidade"
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Funil de execução (Empenhado → Liquidado → Pago), gráfico de destino por
+            área social e insight de concentração CR5. <br />
+            <strong>Implementação na próxima etapa.</strong>
+          </Typography>
+          <Typography variant="caption" color="text.disabled" sx={{ mt: 2, display: 'block' }}>
+            Dados disponíveis: {props.dadosBrutos.length} registros ·{' '}
+            Total: R$ {props.totais.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </Typography>
+        </Box>
+      );
+
+    case 'exploracao':
+      return (
+        <Box sx={estiloPlaceholder}>
+          <ManageSearchRoundedIcon
+            sx={{ fontSize: 40, color: 'primary.main', mb: 1 }}
+          />
+          <Typography variant="h6" color="primary.main" fontWeight={600}>
+            Aba 2 — "Exploração"
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Ranking dos maiores fornecedores com expansão animada,
+            chips de departamento e acesso ao Drawer de evidências. <br />
+            <strong>Implementação na próxima etapa.</strong>
+          </Typography>
+          <Typography variant="caption" color="text.disabled" sx={{ mt: 2, display: 'block' }}>
+            Fornecedores identificados: {props.ranking.length}
+          </Typography>
+        </Box>
+      );
+
+    case 'auditoria':
+      return (
+        <Box sx={estiloPlaceholder}>
+          <QueryStatsRoundedIcon
+            sx={{ fontSize: 40, color: 'primary.main', mb: 1 }}
+          />
+          <Typography variant="h6" color="primary.main" fontWeight={600}>
+            Aba 3 — "Auditoria Algorítmica"
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            5 motores matemáticos: Z-Score, Lei de Benford, Fracionamento,
+            Monopólio por Órgão e Concentração CR5. Gráfico visual de Benford. <br />
+            <strong>Implementação na próxima etapa.</strong>
+          </Typography>
+          <Typography variant="caption" color="text.disabled" sx={{ mt: 2, display: 'block' }}>
+            Alertas ativos:{' '}
+            {props.insights
+              ? Object.values(props.insights).filter((i) => i.alerta).length
+              : '—'}
+            {' '}de 5 motores
+          </Typography>
+        </Box>
+      );
+
+    case 'evidencias':
+      return (
+        <Box sx={estiloPlaceholder}>
+          <PlagiarismRoundedIcon
+            sx={{ fontSize: 40, color: 'primary.main', mb: 1 }}
+          />
+          <Typography variant="h6" color="primary.main" fontWeight={600}>
+            Aba 4 — "Evidências"
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            Tabela paginada de todos os registros brutos com filtro por evento
+            (Empenhado / Liquidado / Pago / Anulação) e chips coloridos. <br />
+            <strong>Implementação na próxima etapa.</strong>
+          </Typography>
+          <Typography variant="caption" color="text.disabled" sx={{ mt: 2, display: 'block' }}>
+            Total de registros disponíveis: {props.dadosBrutos.length}
+          </Typography>
+        </Box>
+      );
+
+    default:
+      return null;
+  }
 }
