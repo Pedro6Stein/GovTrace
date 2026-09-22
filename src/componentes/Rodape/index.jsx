@@ -12,6 +12,7 @@ import {
 import AccountBalanceRoundedIcon from '@mui/icons-material/AccountBalanceRounded';
 
 import ModalMetodologia from '../ModalMetodologia';
+import ModalSobre from '../Sobre';
 
 /**
  * Rodape — Rodapé institucional escuro ancorado (Slate Charcoal #1E293B)
@@ -37,6 +38,7 @@ const DARK = {
 
 export default function Rodape() {
   const [modalAberto, setModalAberto] = useState(false);
+  const [modalSobreAberto, setModalSobreAberto] = useState(false);
 
   const anoAtual = new Date().getFullYear();
 
@@ -153,7 +155,7 @@ export default function Rodape() {
                   Links
                 </Typography>
                 {[
-                  { rotulo: 'Sobre', href: '#' },
+                  { rotulo: 'Sobre', acao: () => setModalSobreAberto(true) },
                   { rotulo: 'Metodologia', acao: () => setModalAberto(true) },
                   {
                     rotulo: 'Fontes (TCE-SP)',
@@ -231,6 +233,12 @@ export default function Rodape() {
       <ModalMetodologia
         aberto={modalAberto}
         aoFechar={() => setModalAberto(false)}
+      />
+
+      {/* Modal institucional Sobre disparado pelo link do rodapé */}
+      <ModalSobre
+        aberto={modalSobreAberto}
+        aoFechar={() => setModalSobreAberto(false)}
       />
     </>
   );

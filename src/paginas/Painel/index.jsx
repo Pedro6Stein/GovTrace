@@ -11,6 +11,7 @@ import {
   Typography,
 } from '@mui/material';
 
+
 import AccountBalanceRoundedIcon from '@mui/icons-material/AccountBalanceRounded';
 import ManageSearchRoundedIcon from '@mui/icons-material/ManageSearchRounded';
 import PlagiarismRoundedIcon from '@mui/icons-material/PlagiarismRounded';
@@ -20,6 +21,19 @@ import Cabecalho from '../../componentes/Cabecalho';
 import Rodape from '../../componentes/Rodape';
 import SeletorPeriodo from '../../componentes/SeletorPeriodo';
 import SkeletonPainel from '../../componentes/SkeletonPainel';
+
+// Aba 1 — "A Cidade"
+import HeroCidade from '../../componentes/abaCidade/HeroCidade';
+import GraficoDestino from '../../componentes/abaCidade/GraficoDestino';
+
+// Aba 2 — "Exploração"
+import RankingFornecedores from '../../componentes/abaExploracao/RankingFornecedores';
+
+// Aba 3 — "Auditoria Algorítmica"
+import PainelAuditoria from '../../componentes/abaAuditoria/PainelAuditoria';
+
+// Aba 4 — "Evidências"
+import TabelaEvidenciasAvancada from '../../componentes/abaEvidencias/TabelaEvidenciasAvancada';
 
 import { buscarDespesas } from '../../servicos/apiTce';
 
@@ -408,88 +422,35 @@ function ConteudoAba({ id, props }) {
   switch (id) {
     case 'cidade':
       return (
-        <Box sx={estiloPlaceholder}>
-          <AccountBalanceRoundedIcon
-            sx={{ fontSize: 40, color: 'primary.main', mb: 1 }}
+        <Stack spacing={3}>
+          {/* Métricas macro + insight de concentração */}
+          <HeroCidade
+            totais={props.totais}
+            concentracao={props.insights?.concentracao}
           />
-          <Typography variant="h6" color="primary.main" fontWeight={600}>
-            Aba 1 — "A Cidade"
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Funil de execução (Empenhado → Liquidado → Pago), gráfico de destino por
-            área social e insight de concentração CR5. <br />
-            <strong>Implementação na próxima etapa.</strong>
-          </Typography>
-          <Typography variant="caption" color="text.disabled" sx={{ mt: 2, display: 'block' }}>
-            Dados disponíveis: {props.dadosBrutos.length} registros ·{' '}
-            Total: R$ {props.totais.valorTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-          </Typography>
-        </Box>
+          {/* Distribuição por área social */}
+          <GraficoDestino distribuicao={props.distribuicao} />
+        </Stack>
       );
+
 
     case 'exploracao':
       return (
-        <Box sx={estiloPlaceholder}>
-          <ManageSearchRoundedIcon
-            sx={{ fontSize: 40, color: 'primary.main', mb: 1 }}
-          />
-          <Typography variant="h6" color="primary.main" fontWeight={600}>
-            Aba 2 — "Exploração"
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Ranking dos maiores fornecedores com expansão animada,
-            chips de departamento e acesso ao Drawer de evidências. <br />
-            <strong>Implementação na próxima etapa.</strong>
-          </Typography>
-          <Typography variant="caption" color="text.disabled" sx={{ mt: 2, display: 'block' }}>
-            Fornecedores identificados: {props.ranking.length}
-          </Typography>
-        </Box>
+        <RankingFornecedores
+          ranking={props.ranking}
+          dadosBrutos={props.dadosBrutos}
+          totais={props.totais}
+        />
       );
+
 
     case 'auditoria':
-      return (
-        <Box sx={estiloPlaceholder}>
-          <QueryStatsRoundedIcon
-            sx={{ fontSize: 40, color: 'primary.main', mb: 1 }}
-          />
-          <Typography variant="h6" color="primary.main" fontWeight={600}>
-            Aba 3 — "Auditoria Algorítmica"
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            5 motores matemáticos: Z-Score, Lei de Benford, Fracionamento,
-            Monopólio por Órgão e Concentração CR5. Gráfico visual de Benford. <br />
-            <strong>Implementação na próxima etapa.</strong>
-          </Typography>
-          <Typography variant="caption" color="text.disabled" sx={{ mt: 2, display: 'block' }}>
-            Alertas ativos:{' '}
-            {props.insights
-              ? Object.values(props.insights).filter((i) => i.alerta).length
-              : '—'}
-            {' '}de 5 motores
-          </Typography>
-        </Box>
-      );
+      return <PainelAuditoria insights={props.insights} />;
+
 
     case 'evidencias':
-      return (
-        <Box sx={estiloPlaceholder}>
-          <PlagiarismRoundedIcon
-            sx={{ fontSize: 40, color: 'primary.main', mb: 1 }}
-          />
-          <Typography variant="h6" color="primary.main" fontWeight={600}>
-            Aba 4 — "Evidências"
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            Tabela paginada de todos os registros brutos com filtro por evento
-            (Empenhado / Liquidado / Pago / Anulação) e chips coloridos. <br />
-            <strong>Implementação na próxima etapa.</strong>
-          </Typography>
-          <Typography variant="caption" color="text.disabled" sx={{ mt: 2, display: 'block' }}>
-            Total de registros disponíveis: {props.dadosBrutos.length}
-          </Typography>
-        </Box>
-      );
+      return <TabelaEvidenciasAvancada despesas={props.dadosBrutos} />;
+
 
     default:
       return null;

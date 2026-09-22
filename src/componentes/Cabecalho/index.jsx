@@ -15,9 +15,12 @@ import {
 } from '@mui/material';
 
 import AccountBalanceRoundedIcon from '@mui/icons-material/AccountBalanceRounded';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import QueryStatsRoundedIcon from '@mui/icons-material/QueryStatsRounded';
 
 import ModalMetodologia from '../ModalMetodologia';
+import ModalSobre from '../Sobre';
+
 
 /**
  * Cabecalho — Header estilo OS moderno com identidade FATEC/SP
@@ -32,6 +35,7 @@ import ModalMetodologia from '../ModalMetodologia';
  */
 export default function Cabecalho() {
   const [modalAberto, setModalAberto] = useState(false);
+  const [modalSobreAberto, setModalSobreAberto] = useState(false);
 
   // Eleva com sombra ao fazer scroll — padrão Material You
   const elevado = useScrollTrigger({
@@ -143,7 +147,35 @@ export default function Cabecalho() {
               {/* ── Ações ───────────────────────────────────────────────── */}
               <Stack direction="row" alignItems="center" spacing={1}>
 
-                {/* Desktop: botão com label + ícone */}
+                {/* Desktop: Botão Sobre */}
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  startIcon={<InfoOutlinedIcon />}
+                  onClick={() => setModalSobreAberto(true)}
+                  aria-label="Abrir informações institucionais do GovTrace"
+                  sx={{
+                    display: { xs: 'none', sm: 'inline-flex' },
+                    background: 'transparent',
+                    borderColor: '#E2E8F0',
+                    color: 'text.secondary',
+                    fontWeight: 500,
+                    fontSize: '0.875rem',
+                    minHeight: '38px',
+                    px: 2,
+                    boxShadow: 'none !important',
+                    transform: 'none !important',
+                    '&:hover': {
+                      borderColor: 'primary.main',
+                      color: 'primary.main',
+                      bgcolor: 'rgba(162, 0, 0, 0.04)',
+                    },
+                  }}
+                >
+                  Sobre
+                </Button>
+
+                {/* Desktop: Botão Metodologia */}
                 <Button
                   variant="outlined"
                   color="primary"
@@ -172,7 +204,23 @@ export default function Cabecalho() {
                   Metodologia
                 </Button>
 
-                {/* Mobile: apenas o ícone */}
+                {/* Mobile: Ícone Sobre */}
+                <Tooltip title="Sobre o GovTrace" arrow>
+                  <IconButton
+                    onClick={() => setModalSobreAberto(true)}
+                    aria-label="Sobre o GovTrace"
+                    size="small"
+                    sx={{
+                      display: { xs: 'flex', sm: 'none' },
+                      color: 'text.secondary',
+                      '&:hover': { color: 'primary.main' },
+                    }}
+                  >
+                    <InfoOutlinedIcon />
+                  </IconButton>
+                </Tooltip>
+
+                {/* Mobile: Ícone Metodologia */}
                 <Tooltip title="Ver metodologia de auditoria" arrow>
                   <IconButton
                     onClick={() => setModalAberto(true)}
@@ -197,6 +245,12 @@ export default function Cabecalho() {
       <ModalMetodologia
         aberto={modalAberto}
         aoFechar={() => setModalAberto(false)}
+      />
+
+      {/* Modal institucional Sobre */}
+      <ModalSobre
+        aberto={modalSobreAberto}
+        aoFechar={() => setModalSobreAberto(false)}
       />
     </>
   );

@@ -129,17 +129,21 @@ const baseTheme = createTheme(
             -moz-osx-font-smoothing: grayscale;
           }
 
-          /* ── CORREÇÃO MOBILE ──────────────────────────────────────────────
-             Remove o highlight cinzento padrão do iOS/Android ao tocar em
-             qualquer elemento interativo. O feedback visual passa a ser feito
-             exclusivamente via estados MUI (ripple, hover, active). */
+          /* ── CORREÇÃO MOBILE E FOCO ──────────────────────────────────────
+             Remove o highlight cinzento padrão do mobile e garante que inputs
+             não recebam anéis duplos de foco. O feedback de inputs é feito
+             exclusivamente pela borda suave do Material UI. */
           * {
             -webkit-tap-highlight-color: transparent;
             box-sizing: border-box;
           }
 
-          :focus-visible {
-            outline: 3px solid #a20000 !important;
+          input, textarea, select {
+            outline: none !important;
+          }
+
+          :focus-visible:not(input):not(textarea):not(select) {
+            outline: 2px solid #a20000 !important;
             outline-offset: 2px !important;
           }
 
@@ -219,10 +223,14 @@ const baseTheme = createTheme(
         },
       },
 
-      // Inputs: altura mínima acessível, cantos suaves
+      // Inputs: altura mínima acessível, cantos suaves e foco único limpo
       MuiInputBase: {
         styleOverrides: {
           root: { minHeight: '44px' },
+          input: {
+            '&:focus': { outline: 'none !important' },
+            '&:focus-visible': { outline: 'none !important' },
+          },
         },
       },
       MuiOutlinedInput: {
@@ -231,7 +239,12 @@ const baseTheme = createTheme(
             borderRadius: '10px',
             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
               borderColor: '#a20000',
+              borderWidth: '2px',
             },
+          },
+          notchedOutline: {
+            borderColor: '#E8EAED',
+            transition: 'border-color 0.2s ease, border-width 0.2s ease',
           },
         },
       },
