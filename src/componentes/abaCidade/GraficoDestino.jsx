@@ -16,6 +16,9 @@ import LocalHospitalRoundedIcon from '@mui/icons-material/LocalHospitalRounded';
 import PaletteRoundedIcon from '@mui/icons-material/PaletteRounded';
 import SchoolRoundedIcon from '@mui/icons-material/SchoolRounded';
 import ShieldRoundedIcon from '@mui/icons-material/ShieldRounded';
+import DirectionsBusRoundedIcon from '@mui/icons-material/DirectionsBusRounded';
+import ComputerRoundedIcon from '@mui/icons-material/ComputerRounded';
+import CleaningServicesRoundedIcon from '@mui/icons-material/CleaningServicesRounded';
 
 /**
  * GraficoDestino — "Para onde foi o dinheiro?"
@@ -49,6 +52,18 @@ const CATEGORIA = {
     fundo: '#FFFBEB',
     descricao: 'Pavimentação, saneamento, obras e urbanismo',
   },
+  'Transporte e Frota': {
+    Icone: DirectionsBusRoundedIcon,
+    cor: '#0369A1',
+    fundo: '#F0F9FF',
+    descricao: 'Combustível, manutenção de frota, transporte escolar e locação de veículos',
+  },
+  'Tecnologia': {
+    Icone: ComputerRoundedIcon,
+    cor: '#0F766E',
+    fundo: '#F0FDFA',
+    descricao: 'Softwares, equipamentos de TI, redes e telecomunicações',
+  },
   'Assistência Social': {
     Icone: Diversity3RoundedIcon,
     cor: '#059669',
@@ -66,6 +81,12 @@ const CATEGORIA = {
     cor: '#C98B22',
     fundo: '#FEFCE8',
     descricao: 'Eventos culturais, praças esportivas e atividades de lazer',
+  },
+  'Serviços Operacionais': {
+    Icone: CleaningServicesRoundedIcon,
+    cor: '#475569',
+    fundo: '#F8FAFC',
+    descricao: 'Limpeza, conservação, zeladoria e manutenção predial',
   },
   'Administração e Outros': {
     Icone: AccountBalanceRoundedIcon,

@@ -132,17 +132,18 @@ function DetalheZScore({ outliers }) {
       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', mb: 1 }}>
         Registros com desvio Z &gt; 4 — {outliers.length} identificado{outliers.length !== 1 ? 's' : ''}
       </Typography>
-      <Stack spacing={0.75}>
+      <Stack spacing={1}>
         {outliers.slice(0, 5).map((o, i) => (
-          <Stack key={i} direction="row" justifyContent="space-between" alignItems="center"
-            sx={{ p: 1.25, borderRadius: 1.5, bgcolor: '#FEF3C7', border: '1px solid', borderColor: '#FDE68A' }}>
-            <Box sx={{ minWidth: 0 }}>
+          <Stack key={i} direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }}
+            spacing={{ xs: 1, sm: 0 }}
+            sx={{ p: 1.5, borderRadius: 1.5, bgcolor: '#FEF3C7', border: '1px solid', borderColor: '#FDE68A' }}>
+            <Box sx={{ minWidth: 0, width: '100%' }}>
               <Typography variant="caption" fontWeight={600} sx={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {o.fornecedorNome}
               </Typography>
               <Typography variant="caption" color="text.secondary">{o.orgao}</Typography>
             </Box>
-            <Typography sx={{ fontFamily: '"Roboto Mono", monospace', fontVariantNumeric: 'tabular-nums', fontWeight: 700, fontSize: '0.8125rem', ml: 2, flexShrink: 0 }}>
+            <Typography sx={{ fontFamily: '"Roboto Mono", monospace', fontVariantNumeric: 'tabular-nums', fontWeight: 700, fontSize: '0.8125rem', ml: { xs: 0, sm: 2 }, flexShrink: 0 }}>
               {fmtCompacto(o.valor)}
             </Typography>
           </Stack>
@@ -205,11 +206,12 @@ function DetalheFracionamento({ anomalias }) {
       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', mb: 1 }}>
         Padrões de repetição detectados — {anomalias.length} ocorrência{anomalias.length !== 1 ? 's' : ''}
       </Typography>
-      <Stack spacing={0.75}>
+      <Stack spacing={1}>
         {anomalias.slice(0, 5).map((a, i) => (
-          <Stack key={i} direction="row" justifyContent="space-between" alignItems="center"
-            sx={{ p: 1.25, borderRadius: 1.5, bgcolor: '#FEF3C7', border: '1px solid', borderColor: '#FDE68A' }}>
-            <Box sx={{ minWidth: 0 }}>
+          <Stack key={i} direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }}
+            spacing={{ xs: 1, sm: 0 }}
+            sx={{ p: 1.5, borderRadius: 1.5, bgcolor: '#FEF3C7', border: '1px solid', borderColor: '#FDE68A' }}>
+            <Box sx={{ minWidth: 0, width: '100%' }}>
               <Typography variant="caption" fontWeight={600} sx={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {a.nome}
               </Typography>
@@ -220,7 +222,7 @@ function DetalheFracionamento({ anomalias }) {
             <Chip
               label={`${a.repeticoes}×`}
               size="small"
-              sx={{ bgcolor: '#B45309', color: '#fff', fontWeight: 700, fontSize: '0.6875rem', height: 22, ml: 1.5, flexShrink: 0 }}
+              sx={{ bgcolor: '#B45309', color: '#fff', fontWeight: 700, fontSize: '0.6875rem', height: 22, ml: { xs: 0, sm: 1.5 }, flexShrink: 0 }}
             />
           </Stack>
         ))}
@@ -240,11 +242,11 @@ function DetalheMonopolio({ departamentosDependentes }) {
       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', mb: 1 }}>
         Departamentos com dependência crítica — {departamentosDependentes.length} identificado{departamentosDependentes.length !== 1 ? 's' : ''}
       </Typography>
-      <Stack spacing={0.75}>
+      <Stack spacing={1}>
         {departamentosDependentes.slice(0, 5).map((d, i) => (
           <Box key={i} sx={{ p: 1.5, borderRadius: 1.5, bgcolor: '#FEF3C7', border: '1px solid', borderColor: '#FDE68A' }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-              <Box sx={{ minWidth: 0, mr: 1 }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'flex-start' }} spacing={{ xs: 1, sm: 0 }}>
+              <Box sx={{ minWidth: 0, mr: { sm: 1 }, width: '100%' }}>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {d.orgao}
                 </Typography>
@@ -280,13 +282,16 @@ function DetalheConcentracao({ dados }) {
       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', mb: 1 }}>
         Top 5 — {dados.percentual}% do total do período
       </Typography>
-      <Stack spacing={0.75}>
+      <Stack spacing={1}>
         {dados.top5.map((f, i) => (
-          <Stack key={f.id || i} direction="row" justifyContent="space-between" alignItems="center"
-            sx={{ p: 1.25, borderRadius: 1.5, bgcolor: '#FEF9F0', border: '1px solid', borderColor: '#FDE68A' }}>
-            <Typography variant="caption" fontWeight={600} sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', mr: 1 }}>
-              {f.nome}
-            </Typography>
+          <Stack key={f.id || i} direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }}
+            spacing={{ xs: 1, sm: 0 }}
+            sx={{ p: 1.5, borderRadius: 1.5, bgcolor: '#FEF9F0', border: '1px solid', borderColor: '#FDE68A' }}>
+            <Box sx={{ minWidth: 0, width: '100%' }}>
+              <Typography variant="caption" fontWeight={600} sx={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', mr: { sm: 1 } }}>
+                {f.nome}
+              </Typography>
+            </Box>
             <Typography sx={{ fontFamily: '"Roboto Mono", monospace', fontVariantNumeric: 'tabular-nums', fontWeight: 700, fontSize: '0.8125rem', flexShrink: 0 }}>
               {fmtCompacto(f.valorTotal)}
             </Typography>

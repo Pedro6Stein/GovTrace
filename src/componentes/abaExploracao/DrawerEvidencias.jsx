@@ -197,7 +197,8 @@ export default function DrawerEvidencias({ aberto, aoFechar, fornecedor, despesa
           <Typography color="text.secondary">Nenhum registro encontrado.</Typography>
         </Box>
       ) : (
-        <Box sx={{ px: { xs: 1, sm: 2 }, pt: 2, pb: 1, overflow: 'auto' }}>
+        <Box sx={{ px: { xs: 1, sm: 2 }, pt: 2, pb: 1 }}>
+          <Box sx={{ width: '100%', overflowX: 'auto' }}>
           <TableContainer>
             <Table size="small" aria-label={`Registros de ${fornecedor?.nome}`}>
               <TableHead>
@@ -283,6 +284,7 @@ export default function DrawerEvidencias({ aberto, aoFechar, fornecedor, despesa
               </TableBody>
             </Table>
           </TableContainer>
+          </Box>
 
           <Divider sx={{ mt: 1 }} />
 

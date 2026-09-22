@@ -15,11 +15,7 @@ import { categorizarDespesa } from './regrasCategorias';
 // Para analisar a competitividade (para quem a prefeitura compra), precisamos 
 // separar os gastos da própria máquina (impostos, repasses, folha de pagamento).
 // Sem isso, a Receita Federal ou a própria Prefeitura apareceriam como "maiores fornecedores".
-const ENTIDADES_IGNORADAS = [
-    'PREFEITURA', 'MINISTERIO DA FAZENDA', 'CAIXA ECONOMICA', 
-    'BANCO DO BRASIL', 'INSS', 'INSTITUTO NACIONAL DO SEGURO SOCIAL',
-    'SANTANDER', 'BRADESCO', 'TRIBUNAL DE JUSTICA'
-  ];
+import { ENTIDADES_IGNORADAS, PARAMETROS_ANALISE, IDS_BANCOS_GOVERNO, NOMES_IGNORADOS_PESSOAL } from '../dados/configuracoes';
   
   /**
    * Função: calcularTotaisGerais
@@ -46,15 +42,22 @@ const ENTIDADES_IGNORADAS = [
    * Complexidade: O(n) via Tabela Hash (Map).
    * Objetivo: Agrupar pagamentos por recebedor, isolando o mercado privado da máquina pública.
    */
-  export const gerarRankingFornecedores = (despesas) => {
+  export const gerarRankingFornecedores = (despesas, apenasPagos = false) => {
     const mapaFornecedores = new Map();
   
     for (const despesa of despesas) {
+      if (apenasPagos && !despesa.evento.includes('Pago') && !despesa.evento.includes('Liquidado')) {
+        continue;
+      }
+
       const nomeMaiusculo = despesa.fornecedorNome.toUpperCase();
       
       // Ignora entidades governamentais/bancárias para focar em fornecedores de mercado
       const ehGovernoOuBanco = ENTIDADES_IGNORADAS.some(ignorado => nomeMaiusculo.includes(ignorado));
-      if (ehGovernoOuBanco) continue;
+      const ehFolhaPessoal = NOMES_IGNORADOS_PESSOAL.some(ignorado => nomeMaiusculo.includes(ignorado));
+      const ehBancoEstat = IDS_BANCOS_GOVERNO.some(id => despesa.fornecedorId.startsWith(id));
+
+      if (ehGovernoOuBanco || ehFolhaPessoal || ehBancoEstat) continue;
   
       // Agrupamento instantâneo
       if (mapaFornecedores.has(despesa.fornecedorId)) {
@@ -91,8 +94,8 @@ const ENTIDADES_IGNORADAS = [
     // Formatação didática para crianças/leigos: "De cada 100 reais, X foram para os top 5"
     const reaisApenasTop5 = Math.round(percentual);
   
-    // Regra de Alerta: > 30% é considerado alta concentração pelo motor do GovTrace
-    const alerta = percentual > 30;
+    // Regra de Alerta: maior que o limite configurado é considerado alta concentração pelo motor do GovTrace
+    const alerta = percentual > PARAMETROS_ANALISE.CONCENTRACAO_CR5_ALERTA;
   
     return {
       alerta,
@@ -121,7 +124,7 @@ export const calcularDistribuicaoPorCategoria = (despesas) => {
   let totalMapeado = 0;
 
   for (const despesa of despesas) {
-    const categoria = categorizarDespesa(despesa.orgao);
+    const categoria = categorizarDespesa(despesa.orgao, despesa.fornecedorNome);
     categorias.set(categoria, (categorias.get(categoria) || 0) + despesa.valor);
     totalMapeado += despesa.valor;
   }

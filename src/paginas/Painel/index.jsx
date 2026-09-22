@@ -317,6 +317,7 @@ export default function Painel() {
             onChange={(_, novaAba) => setAbaAtiva(novaAba)}
             variant="scrollable"
             scrollButtons="auto"
+            allowScrollButtonsMobile
             textColor="primary"
             indicatorColor="primary"
             aria-label="Abas de navegação do GovTrace"
@@ -366,15 +367,18 @@ export default function Painel() {
         display: 'flex',
         flexDirection: 'column',
         minHeight: '100vh',
+        width: '100vw',        // Trava: nunca ultrapassa a viewport
+        maxWidth: '100vw',
+        overflowX: 'hidden',   // Mata qualquer scroll horizontal residual
         bgcolor: 'background.default',
       }}
     >
       <Cabecalho />
 
       <Container
-        maxWidth="lg"
+        maxWidth="xl"
         component="main"
-        sx={{ flexGrow: 1, py: { xs: 2, sm: 3 } }}
+        sx={{ flexGrow: 1, py: { xs: 2, sm: 3 }, px: { xs: 1.5, sm: 3, md: 4 } }}
       >
         <SeletorPeriodo filtros={filtros} onFiltroChange={setFiltros} />
 

@@ -1,4 +1,4 @@
-import { Box, Card, CardContent, Grid, Stack, Tooltip, Typography } from '@mui/material';
+import { Box, Card, CardContent, Stack, Tooltip, Typography } from '@mui/material';
 
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded';
@@ -41,7 +41,7 @@ function Dica({ texto }) {
 function CardMetrica({ rotulo, dica, valor, legenda, icone: Icone, corIcone }) {
   return (
     <Card elevation={1}>
-      <CardContent sx={{ p: 3, '&:last-child': { pb: 3 } }}>
+      <CardContent sx={{ p: { xs: 2, sm: 3 }, '&:last-child': { pb: { xs: 2, sm: 3 } } }}>
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
           {/* Rótulo + dica */}
           <Typography
@@ -76,17 +76,19 @@ function CardMetrica({ rotulo, dica, valor, legenda, icone: Icone, corIcone }) {
           </Box>
         </Stack>
 
-        {/* Valor principal */}
+        {/* Valor principal — responsivo e seguro contra overflow */}
         <Typography
           sx={{
             mt: 2,
             fontFamily: '"Roboto Mono", monospace',
             fontVariantNumeric: 'tabular-nums',
             fontWeight: 700,
-            fontSize: { xs: '1.75rem', md: '2rem' },
+            fontSize: { xs: '1.25rem', sm: '1.5rem', md: '2rem' },
             letterSpacing: '-0.02em',
             color: 'text.primary',
-            lineHeight: 1,
+            lineHeight: 1.2,
+            wordBreak: 'break-word',   // Impede números longos de estourar o card
+            overflowWrap: 'anywhere',
           }}
         >
           {valor}
@@ -123,32 +125,34 @@ export default function HeroCidade({ totais, concentracao }) {
 
   return (
     <Stack spacing={3}>
-      {/* ── Linha de métricas ─────────────────────────────────────────── */}
-      <Grid container spacing={3}>
+      {/* ── Linha de métricas — CSS Grid moderno, sem margens negativas ── */}
+      <Box
+        sx={{
+          display: 'grid',
+          gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+          gap: { xs: 2, sm: 3 },
+        }}
+      >
         {/* Card 1 — Total Empenhado */}
-        <Grid item xs={12} sm={6}>
-          <CardMetrica
-            rotulo="Total Empenhado"
-            dica="Valor comprometido como intenção de gasto: a prefeitura reservou este montante no orçamento para pagamentos futuros. Não significa que o dinheiro já saiu do caixa municipal."
-            valor={fmtMoeda(totais.valorTotal)}
-            legenda="Empenhos, reforços e anulações do período"
-            icone={AccountBalanceWalletRoundedIcon}
-            corIcone="#a20000"
-          />
-        </Grid>
+        <CardMetrica
+          rotulo="Total Empenhado"
+          dica="Valor comprometido como intenção de gasto: a prefeitura reservou este montante no orçamento para pagamentos futuros. Não significa que o dinheiro já saiu do caixa municipal."
+          valor={fmtMoeda(totais.valorTotal)}
+          legenda="Empenhos, reforços e anulações do período"
+          icone={AccountBalanceWalletRoundedIcon}
+          corIcone="#a20000"
+        />
 
         {/* Card 2 — Registros Analisados */}
-        <Grid item xs={12} sm={6}>
-          <CardMetrica
-            rotulo="Registros Analisados"
-            dica="Quantidade total de notas de empenho, reforços e anulações processadas pelo GovTrace para o período selecionado. Cada registro é um documento oficial publicado pelo TCE-SP."
-            valor={fmtNumero(totais.totalRegistros)}
-            legenda="Documentos oficiais do TCE-SP"
-            icone={ReceiptLongRoundedIcon}
-            corIcone="#0284C7"
-          />
-        </Grid>
-      </Grid>
+        <CardMetrica
+          rotulo="Registros Analisados"
+          dica="Quantidade total de notas de empenho, reforços e anulações processadas pelo GovTrace para o período selecionado. Cada registro é um documento oficial publicado pelo TCE-SP."
+          valor={fmtNumero(totais.totalRegistros)}
+          legenda="Documentos oficiais do TCE-SP"
+          icone={ReceiptLongRoundedIcon}
+          corIcone="#0284C7"
+        />
+      </Box>
 
       {/* ── Card de concentração CR5 ──────────────────────────────────── */}
       {concentracao && (
