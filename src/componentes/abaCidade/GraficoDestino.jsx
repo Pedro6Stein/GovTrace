@@ -10,89 +10,89 @@ import {
 } from '@mui/material';
 
 import AccountBalanceRoundedIcon from '@mui/icons-material/AccountBalanceRounded';
+import CleaningServicesRoundedIcon from '@mui/icons-material/CleaningServicesRounded';
+import ComputerRoundedIcon from '@mui/icons-material/ComputerRounded';
 import ConstructionRoundedIcon from '@mui/icons-material/ConstructionRounded';
-import Diversity3RoundedIcon from '@mui/icons-material/Diversity3Rounded';
+import DirectionsBusRoundedIcon from '@mui/icons-material/DirectionsBusRounded';
 import LocalHospitalRoundedIcon from '@mui/icons-material/LocalHospitalRounded';
 import PaletteRoundedIcon from '@mui/icons-material/PaletteRounded';
+import PersonRoundedIcon from '@mui/icons-material/PersonRounded';
+import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
 import SchoolRoundedIcon from '@mui/icons-material/SchoolRounded';
-import ShieldRoundedIcon from '@mui/icons-material/ShieldRounded';
-import DirectionsBusRoundedIcon from '@mui/icons-material/DirectionsBusRounded';
-import ComputerRoundedIcon from '@mui/icons-material/ComputerRounded';
-import CleaningServicesRoundedIcon from '@mui/icons-material/CleaningServicesRounded';
 
 /**
  * GraficoDestino — "Para onde foi o dinheiro?"
  *
- * Traduz o array de distribuição por categoria em barras horizontais animadas
- * com ícone identificador, rótulo textual e percentual claro.
- * Sem jargão contábil — linguagem cidadã.
+ * Traduz o array de distribuição por categoria em barras horizontais animadas.
+ * As chaves do objeto CATEGORIA correspondem EXATAMENTE às strings retornadas
+ * pelo motor de categorização semântica (regrasCategorias.js v2).
  *
  * Props:
  *   distribuicao  Array<{ nome: string, valor: number, percentual: string }>
  */
 
 // ─── Mapeamento categoria → ícone + cor ──────────────────────────────────────
-// Corresponde exatamente aos retornos de regrasCategorias.js
+// ATENÇÃO: as chaves devem ser idênticas (char-by-char) ao retorno do motor NLP.
 const CATEGORIA = {
-  'Saúde': {
+  'Saúde e Medicamentos': {
     Icone: LocalHospitalRoundedIcon,
     cor: '#0284C7',
     fundo: '#EFF8FF',
-    descricao: 'Hospitais, UBSs, medicamentos e serviços de saúde pública',
+    descricao: 'Hospitais, UBSs, drogarias, medicamentos e serviços de saúde pública',
   },
-  'Educação': {
+  'Educação e Ensino': {
     Icone: SchoolRoundedIcon,
     cor: '#7C3AED',
     fundo: '#F5F3FF',
-    descricao: 'Escolas, creches, merenda escolar e material didático',
+    descricao: 'Escolas, creches, merenda escolar, material didático e capacitação',
   },
-  'Infraestrutura e Obras': {
+  'Infraestrutura, Obras e Urbanismo': {
     Icone: ConstructionRoundedIcon,
     cor: '#B45309',
     fundo: '#FFFBEB',
-    descricao: 'Pavimentação, saneamento, obras e urbanismo',
+    descricao: 'Pavimentação, saneamento, obras civis, materiais de construção e urbanismo',
   },
-  'Transporte e Frota': {
+  'Transporte, Frotas e Mobilidade': {
     Icone: DirectionsBusRoundedIcon,
     cor: '#0369A1',
     fundo: '#F0F9FF',
     descricao: 'Combustível, manutenção de frota, transporte escolar e locação de veículos',
   },
-  'Tecnologia': {
+  'Tecnologia e Comunicação': {
     Icone: ComputerRoundedIcon,
     cor: '#0F766E',
     fundo: '#F0FDFA',
-    descricao: 'Softwares, equipamentos de TI, redes e telecomunicações',
+    descricao: 'Softwares, equipamentos de TI, redes, telecom e licenciamentos',
   },
-  'Assistência Social': {
-    Icone: Diversity3RoundedIcon,
-    cor: '#059669',
-    fundo: '#F0FDF4',
-    descricao: 'Programas sociais, apoio a crianças, idosos e famílias vulneráveis',
-  },
-  'Segurança e Trânsito': {
-    Icone: ShieldRoundedIcon,
-    cor: '#a20000',
-    fundo: '#FEF2F2',
-    descricao: 'Guarda municipal, defesa civil e controle de trânsito',
+  'Alimentação e Abastecimento': {
+    Icone: RestaurantRoundedIcon,
+    cor: '#16A34A',
+    fundo: '#DCFCE7',
+    descricao: 'Gêneros alimentícios, cestas básicas, refeições e abastecimento municipal',
   },
   'Cultura, Esporte e Lazer': {
     Icone: PaletteRoundedIcon,
     cor: '#C98B22',
     fundo: '#FEFCE8',
-    descricao: 'Eventos culturais, praças esportivas e atividades de lazer',
+    descricao: 'Eventos culturais, praças esportivas, museus e atividades de lazer',
   },
-  'Serviços Operacionais': {
+  'Administração, Limpeza e Serviços Terceirizados': {
     Icone: CleaningServicesRoundedIcon,
     cor: '#475569',
     fundo: '#F8FAFC',
-    descricao: 'Limpeza, conservação, zeladoria e manutenção predial',
+    descricao: 'Limpeza, zeladoria, vigilância, manutenção predial e serviços gerais',
   },
-  'Administração e Outros': {
+  'Máquina Pública, Repasses e Encargos': {
     Icone: AccountBalanceRoundedIcon,
     cor: '#64748B',
-    fundo: '#F8FAFC',
-    descricao: 'Despesas administrativas, jurídicas e outros setores da máquina pública',
+    fundo: '#F1F5F9',
+    descricao: 'Repasses intergovernamentais, encargos previdenciários, tributos e dívida pública',
+  },
+  'Pessoa Física / Autônomo': {
+    Icone: PersonRoundedIcon,
+    cor: '#94A3B8',
+    fundo: '#F1F5F9',
+    descricao: 'Contratos com profissionais autônomos, MEIs ou prestadores individuais identificados por CPF',
   },
 };
 
