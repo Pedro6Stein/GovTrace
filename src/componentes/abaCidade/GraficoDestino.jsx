@@ -25,7 +25,7 @@ import SchoolRoundedIcon from '@mui/icons-material/SchoolRounded';
  *
  * Traduz o array de distribuição por categoria em barras horizontais animadas.
  * As chaves do objeto CATEGORIA correspondem EXATAMENTE às strings retornadas
- * pelo motor de categorização semântica (regrasCategorias.js v2).
+ * pelo motor de categorização semântica da GovTrace API (dominio/regrasCategorias.js).
  *
  * Props:
  *   distribuicao  Array<{ nome: string, valor: number, percentual: string }>

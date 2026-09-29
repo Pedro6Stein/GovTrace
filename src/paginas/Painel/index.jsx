@@ -35,53 +35,7 @@ import PainelAuditoria from '../../componentes/abaAuditoria/PainelAuditoria';
 // Aba 4 — "Evidências"
 import TabelaEvidenciasAvancada from '../../componentes/abaEvidencias/TabelaEvidenciasAvancada';
 
-import { buscarDespesas } from '../../servicos/apiTce';
-
-import {
-  calcularTotaisGerais,
-  calcularDistribuicaoPorCategoria,
-  gerarRankingFornecedores,
-  gerarInsightConcentracao,
-} from '../../utilitarios/analise';
-
-import {
-  detectarOutliersZScore,
-  analisarLeiBenford,
-  detectarFracionamento,
-  detectarMonopolioPorOrgao,
-} from '../../utilitarios/analiseAvancada';
-
-// ─── Defaults dos insights quando os dados são insuficientes ─────────────────
-const INSIGHTS_PADRAO = {
-  concentracao: {
-    alerta: false,
-    mensagemPrincipal: 'Aguardando dados estruturados',
-    insightEducativo:
-      'Quantidade insuficiente de notas para calcular concentração de mercado.',
-  },
-  zScore: {
-    alerta: false,
-    titulo: 'Gastos Fora do Padrão',
-    insightEducativo:
-      'Base de dados reduzida. Impossível calcular curva normal.',
-  },
-  benford: {
-    alerta: false,
-    titulo: 'Teste de Lei de Benford',
-    insightEducativo: 'Poucos registros para análise de dígito natural.',
-  },
-  fracionamento: {
-    alerta: false,
-    titulo: 'Chuva de Valores',
-    insightEducativo: 'Sem anomalias repetitivas detectadas.',
-  },
-  monopolio: {
-    alerta: false,
-    titulo: 'Monopólio Departamental',
-    insightEducativo: 'Não detectado.',
-  },
-};
-
+import { buscarAnalise } from '../../servicos/apiGovtrace';
 // ─── Definição das 4 abas ────────────────────────────────────────────────────
 const ABAS = [
   {
@@ -128,7 +82,7 @@ export default function Painel() {
   const [carregando, setCarregando] = useState(false);
   const [erro, setErro] = useState(false);
 
-  // Dados brutos e derivados (calculados pelos motores)
+  // Dados recebidos prontos da GovTrace API (nenhum cálculo no front)
   const [dadosBrutos, setDadosBrutos] = useState([]);
   const [totais, setTotais] = useState({ valorTotal: 0, totalRegistros: 0 });
   const [distribuicao, setDistribuicao] = useState([]);
@@ -143,59 +97,35 @@ export default function Painel() {
     // Não busca se o município ainda não foi selecionado
     if (!filtros.municipio) return;
 
+    // Cancela a requisição anterior se o usuário trocar o filtro no meio
+    // do carregamento — evita que uma resposta antiga sobrescreva a nova.
+    const controlador = new AbortController();
+
     const carregarDados = async () => {
       setCarregando(true);
       setErro(false);
 
       try {
-        const dados = await buscarDespesas(
-          filtros.municipio,
-          filtros.ano,
-          filtros.mes,
-        );
+        const analise = await buscarAnalise(filtros.municipio, filtros.ano, filtros.mes, {
+          signal: controlador.signal,
+        });
 
-        setDadosBrutos(dados);
-
-        if (!dados?.length) {
-          setTotais({ valorTotal: 0, totalRegistros: 0 });
-          setDistribuicao([]);
-          setRanking([]);
-          setInsights(null);
-          return;
-        }
-
-        // ── Motores de análise (preservados integralmente) ──────────────────
-        const calculoTotais = calcularTotaisGerais(dados);
-        const novaDistribuicao = calcularDistribuicaoPorCategoria(dados);
-        const novoRanking = gerarRankingFornecedores(dados);
-
-        const novosInsights = {
-          concentracao:
-            gerarInsightConcentracao(novoRanking, calculoTotais.valorTotal) ||
-            INSIGHTS_PADRAO.concentracao,
-          zScore:
-            detectarOutliersZScore(dados) || INSIGHTS_PADRAO.zScore,
-          benford:
-            analisarLeiBenford(dados) || INSIGHTS_PADRAO.benford,
-          fracionamento:
-            detectarFracionamento(dados) || INSIGHTS_PADRAO.fracionamento,
-          monopolio:
-            detectarMonopolioPorOrgao(dados) || INSIGHTS_PADRAO.monopolio,
-        };
-
-        setTotais(calculoTotais);
-        setDistribuicao(novaDistribuicao);
-        setRanking(novoRanking);
-        setInsights(novosInsights);
+        setDadosBrutos(analise.despesas);
+        setTotais(analise.totais);
+        setDistribuicao(analise.distribuicao);
+        setRanking(analise.ranking);
+        setInsights(analise.insights);
       } catch (err) {
-        console.error('[GovTrace] Falha ao buscar dados do TCE-SP:', err);
+        if (err.name === 'AbortError') return;
+        console.error('[GovTrace] Falha ao consultar a GovTrace API:', err);
         setErro(true);
       } finally {
-        setCarregando(false);
+        if (!controlador.signal.aborted) setCarregando(false);
       }
     };
 
     carregarDados();
+    return () => controlador.abort();
   }, [filtros]);
 
   // ─── Props compartilhadas entre as abas ────────────────────────────────────
