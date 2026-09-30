@@ -1,5 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import '@fontsource-variable/inter'; // Fonte auto-hospedada: sem Google Fonts, sem FOUT de fallback
 import { ThemeProvider } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { temaGovTrace } from './tema/tema';

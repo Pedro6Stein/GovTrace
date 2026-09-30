@@ -76,7 +76,7 @@ function Posicao({ posicao }) {
         flexShrink: 0,
         fontWeight: 700,
         fontSize: '0.75rem',
-        fontFamily: '"Roboto Mono", monospace',
+        fontVariantNumeric: 'tabular-nums',
       }}
     >
       {s.label}
@@ -150,7 +150,6 @@ function ItemFornecedor({ fornecedor, posicao, proporcao, dadosBrutos, onVerEvid
           <Stack alignItems="flex-end" spacing={0.5} sx={{ flexShrink: 0 }}>
             <Typography
               sx={{
-                fontFamily: '"Roboto Mono", monospace',
                 fontVariantNumeric: 'tabular-nums',
                 fontWeight: 700,
                 fontSize: { xs: '0.8125rem', sm: '0.9375rem' },
@@ -229,7 +228,6 @@ function ItemFornecedor({ fornecedor, posicao, proporcao, dadosBrutos, onVerEvid
               </Typography>
               <Typography
                 sx={{
-                  fontFamily: '"Roboto Mono", monospace',
                   fontVariantNumeric: 'tabular-nums',
                   fontWeight: 700,
                   fontSize: '1.125rem',

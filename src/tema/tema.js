@@ -79,11 +79,11 @@ const baseTheme = createTheme(
         light: '#E0F2FE',
       },
 
-      // ── Texto ────────────────────────────────────────────────────────────
+      // ── Texto (contrastes medidos sobre #FFFFFF / #F1F3F4 — WCAG 2.1 AA) ──
       text: {
-        primary: '#1E293B',     // Slate 800
-        secondary: '#64748B',   // Slate 500
-        disabled: '#94A3B8',    // Slate 400
+        primary: '#1E293B',     // Slate 800 — 14,6:1
+        secondary: '#475569',   // Slate 600 —  7,6:1 (era #64748B: 4,3:1 no fundo, reprovava)
+        disabled: '#64748B',    // Slate 500 —  4,8:1 (era #94A3B8: 2,6:1, usado em legendas)
       },
 
       // Divisor mineral — suave sobre o fundo tonal #F1F3F4
@@ -92,7 +92,9 @@ const baseTheme = createTheme(
 
     // ─── TIPOGRAFIA ──────────────────────────────────────────────────────────
     typography: {
-      fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+      // Inter (auto-hospedada em main.jsx): alta legibilidade em telas pequenas,
+      // algarismos tabulares nativos e "1/l/I" bem distintos — ideal para dados.
+      fontFamily: '"Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
 
       h1: { fontWeight: 700, letterSpacing: '-0.02em' },
       h2: { fontWeight: 700, letterSpacing: '-0.015em' },
@@ -104,9 +106,9 @@ const baseTheme = createTheme(
       body1: { fontSize: '1rem', lineHeight: 1.65 },
       body2: { fontSize: '0.875rem', lineHeight: 1.55 },
 
-      // Variante custom para valores monetários
+      // Variante custom para valores monetários: mesma família do texto,
+      // com algarismos de largura fixa (alinham em colunas sem parecer "código")
       valor: {
-        fontFamily: '"Roboto Mono", "Courier New", monospace',
         fontVariantNumeric: 'tabular-nums',
         fontWeight: 600,
         letterSpacing: '-0.01em',
@@ -147,6 +149,18 @@ const baseTheme = createTheme(
             outline-offset: 2px !important;
           }
 
+          /* ── MOVIMENTO REDUZIDO (WCAG 2.3.3) ─────────────────────────────
+             Quem configurou o sistema para reduzir animações (labirintite,
+             enxaqueca, TDAH) recebe transições instantâneas em todo o app. */
+          @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+              animation-duration: 0.01ms !important;
+              animation-iteration-count: 1 !important;
+              transition-duration: 0.01ms !important;
+              scroll-behavior: auto !important;
+            }
+          }
+
           /* Scrollbar sutil nos navegadores que suportam */
           ::-webkit-scrollbar { width: 6px; height: 6px; }
           ::-webkit-scrollbar-track { background: transparent; }
@@ -184,8 +198,8 @@ const baseTheme = createTheme(
             },
           },
           outlinedPrimary: {
-            borderColor: '#E2E8F0',
-            color: '#64748B',
+            borderColor: '#CBD5E1',
+            color: '#475569',
             boxShadow: 'none',
             '&:hover': {
               borderColor: '#a20000',
@@ -243,7 +257,8 @@ const baseTheme = createTheme(
             },
           },
           notchedOutline: {
-            borderColor: '#E8EAED',
+            // 3,06:1 — contorno de controle perceptível (WCAG 1.4.11). Era #E8EAED (1,2:1)
+            borderColor: '#8A94A6',
             transition: 'border-color 0.2s ease, border-width 0.2s ease',
           },
         },
@@ -258,18 +273,15 @@ const baseTheme = createTheme(
         },
       },
 
-      // Cards: sombra suave + micro-elevação no hover
+      // Cards: superfície estática. Sem "pulo" no hover — elevar ao passar o
+      // mouse promete um clique que não existe (affordance falsa). Cards
+      // realmente clicáveis devem usar CardActionArea.
       MuiCard: {
         styleOverrides: {
           root: {
             boxShadow: '0 1px 3px rgba(0,0,0,0.04), 0 4px 20px rgba(0,0,0,0.04)',
             border: '1px solid #E8EAED',
             backgroundImage: 'none',
-            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-            '&:hover': {
-              boxShadow: '0 2px 8px rgba(0,0,0,0.06), 0 8px 30px rgba(0,0,0,0.07)',
-              transform: 'translateY(-2px)',
-            },
           },
         },
       },
