@@ -343,7 +343,7 @@ export default function ModalSobre({ aberto, aoFechar }) {
                   Orientador Acadêmico:
                 </Typography>
                 <Typography variant="body2" fontWeight={600} color="text.primary">
-                  Prof. Clyton José da Rosa
+                  Prof. Clayton José da Rosa
                 </Typography>
                 <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 0.5, lineHeight: 1.5 }}>
                   Orientação metodológica e estruturação analítica do projeto acadêmico.

@@ -137,7 +137,7 @@ export default function Rodape() {
                 Equipe: Pedro Stein, Enzo Corcetti e Lucas Policene
               </Typography>
               <Typography sx={{ color: ESCURO.textoSuave, fontSize: '0.875rem', lineHeight: 1.7 }}>
-                Orientador: Prof. Clyton José da Rosa
+                Orientador: Prof. Clayton José da Rosa
               </Typography>
             </Box>
 
