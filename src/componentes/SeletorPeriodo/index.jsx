@@ -1,43 +1,21 @@
 import { useState, useEffect } from 'react';
 import { Box, FormControl, InputLabel, Select, MenuItem, Stack, Autocomplete, TextField, CircularProgress } from '@mui/material';
-
-// Geração dinâmica dos últimos 5 anos com base no ano atual do sistema
-const anoAtual = new Date().getFullYear();
-const anos = Array.from({ length: 5 }, (_, i) => (anoAtual - i).toString());
-
-// Geração dinâmica e localizada dos meses git
-const meses = Array.from({ length: 12 }, (_, i) => {
-  const data = new Date(0, i);
-  return {
-    valor: (i + 1).toString(),
-    rotulo: data.toLocaleString('pt-BR', { month: 'long' }).replace(/^\w/, (c) => c.toUpperCase())
-  };
-});
+import { buscarMunicipiosSP } from '../../servicos/ibge';
+import { MESES_DISPONIVEIS, ANOS_DISPONIVEIS } from '../../dados/configuracoes';
 
 export default function SeletorPeriodo({ filtros, onFiltroChange }) {
   const [municipiosSP, setMunicipiosSP] = useState([]);
   const [carregandoMunicipios, setCarregandoMunicipios] = useState(true);
 
   useEffect(() => {
-    const buscarMunicipios = async () => {
-      try {
-        // Consumindo a API pública do IBGE para listar as 645 cidades de SP
-        const resposta = await fetch('https://servicodados.ibge.gov.br/api/v1/localidades/estados/SP/municipios');
-        const dados = await resposta.json();
-        
-        // Extrai apenas os nomes e ordena em ordem alfabética
-        const nomesMunicipios = dados.map(m => m.nome).sort();
-        setMunicipiosSP(nomesMunicipios);
-      } catch (erro) {
-        console.error('Erro ao buscar municípios do IBGE:', erro);
-        // Fallback de segurança para não travar a interface
-        setMunicipiosSP(['Bragança Paulista', 'Campinas', 'São Paulo']);
-      } finally {
-        setCarregandoMunicipios(false);
-      }
+    const carregarMunicipios = async () => {
+      setCarregandoMunicipios(true);
+      const nomes = await buscarMunicipiosSP();
+      setMunicipiosSP(nomes);
+      setCarregandoMunicipios(false);
     };
 
-    buscarMunicipios();
+    carregarMunicipios();
   }, []);
 
   const handleChange = (campo, valor) => {
@@ -84,7 +62,7 @@ export default function SeletorPeriodo({ filtros, onFiltroChange }) {
             onChange={(e) => handleChange('ano', e.target.value)}
             sx={{ minHeight: '44px' }}
           >
-            {anos.map((ano) => (
+            {ANOS_DISPONIVEIS.map((ano) => (
               <MenuItem key={ano} value={ano}>{ano}</MenuItem>
             ))}
           </Select>
@@ -99,7 +77,7 @@ export default function SeletorPeriodo({ filtros, onFiltroChange }) {
             onChange={(e) => handleChange('mes', e.target.value)}
             sx={{ minHeight: '44px' }}
           >
-            {meses.map((mes) => (
+            {MESES_DISPONIVEIS.map((mes) => (
               <MenuItem key={mes.valor} value={mes.valor}>{mes.rotulo}</MenuItem>
             ))}
           </Select>

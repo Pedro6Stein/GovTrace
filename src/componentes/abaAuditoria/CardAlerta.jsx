@@ -1,25 +1,14 @@
-import { useState } from 'react';
-
 import {
   Box,
   Card,
   CardContent,
   Chip,
-  Collapse,
   Divider,
-  IconButton,
   Stack,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  Tooltip,
   Typography,
 } from '@mui/material';
 
 import CheckCircleOutlineRoundedIcon from '@mui/icons-material/CheckCircleOutlineRounded';
-import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
 import ScatterPlotRoundedIcon from '@mui/icons-material/ScatterPlotRounded';
 import ShowChartRoundedIcon from '@mui/icons-material/ShowChartRounded';
 import CompressRoundedIcon from '@mui/icons-material/CompressRounded';
@@ -27,11 +16,14 @@ import BalanceRoundedIcon from '@mui/icons-material/BalanceRounded';
 import PieChartOutlineRoundedIcon from '@mui/icons-material/PieChartOutlineRounded';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 
+import ExplicacaoCidada from '../ExplicacaoCidada';
+
 /**
  * CardAlerta — Card de resultado de motor estatístico
  *
- * Exibe de forma didática e rigorosamente neutra o resultado de cada
- * motor de análise da Aba 3. Nunca usa linguagem acusatória.
+ * Hierarquia "dado primeiro": a métrica principal e os registros que a
+ * sustentam ficam sempre visíveis; a explicação cidadã e a metodologia
+ * ficam recolhidas em <ExplicacaoCidada>. Nunca usa linguagem acusatória.
  *
  * Props:
  *   tipo          'zScore' | 'benford' | 'fracionamento' | 'monopolio' | 'concentracao'
@@ -99,6 +91,85 @@ const fmtCompacto = (v) => {
   return fmtMoeda(v);
 };
 
+const plural = (n, singular, pluralTxt) => (n === 1 ? singular : pluralTxt);
+
+// ─── Métrica principal (o "herói" do card) por tipo de motor ─────────────────
+// Motores com amostra insuficiente retornam apenas { alerta: false }; nesse
+// caso a lista esperada vem undefined e exibimos "—" em vez de um zero enganoso.
+function extrairMetrica(tipo, dados) {
+  switch (tipo) {
+    case 'zScore': {
+      const { outliers } = dados;
+      if (!outliers) return { valor: '—', legenda: 'Amostra insuficiente para o teste' };
+      const soma = outliers.reduce((acc, o) => acc + o.valor, 0);
+      return {
+        valor: outliers.length,
+        legenda: outliers.length
+          ? `${plural(outliers.length, 'pagamento atípico', 'pagamentos atípicos')} · ${fmtCompacto(soma)} somados`
+          : 'pagamentos acima de 4 desvios padrão',
+      };
+    }
+    case 'benford':
+      if (dados.digitoSuspeito == null) {
+        return { valor: '—', legenda: 'Nenhum dígito inicial fora da curva de Benford' };
+      }
+      return { valor: dados.digitoSuspeito, legenda: 'dígito inicial com desvio > 5 p.p. do esperado' };
+    case 'fracionamento': {
+      const { anomalias } = dados;
+      if (!anomalias) return { valor: '—', legenda: 'Amostra insuficiente para o teste' };
+      return {
+        valor: anomalias.length,
+        legenda: `${plural(anomalias.length, 'padrão', 'padrões')} de valor idêntico pago ≥ 5× ao mesmo fornecedor`,
+      };
+    }
+    case 'monopolio': {
+      const deps = dados.departamentosDependentes;
+      if (!deps) return { valor: '—', legenda: 'Amostra insuficiente para o teste' };
+      const pico = deps.length ? Math.max(...deps.map((d) => parseFloat(d.percentual))) : null;
+      return {
+        valor: deps.length,
+        legenda:
+          `${plural(deps.length, 'área', 'áreas')} com um único fornecedor ≥ 50% do orçamento` +
+          (pico != null ? ` · pico de ${pico.toFixed(1).replace('.', ',')}%` : ''),
+      };
+    }
+    case 'concentracao':
+      return {
+        valor: `${String(dados.percentual).replace('.', ',')}%`,
+        legenda:
+          'do valor do período foi para os 5 maiores fornecedores' +
+          (dados.somaTop5 ? ` · ${fmtCompacto(dados.somaTop5)}` : ''),
+      };
+    default:
+      return null;
+  }
+}
+
+// ─── Bloco numérico de destaque ──────────────────────────────────────────────
+function MetricaHeroi({ valor, legenda, alerta }) {
+  return (
+    <Box sx={{ mt: 2 }}>
+      <Typography
+        component="p"
+        sx={{
+          fontFamily: '"Roboto Mono", monospace',
+          fontVariantNumeric: 'tabular-nums',
+          fontWeight: 700,
+          fontSize: { xs: '1.75rem', sm: '2.25rem' },
+          lineHeight: 1.1,
+          letterSpacing: '-0.02em',
+          color: alerta ? '#B45309' : 'text.primary',
+        }}
+      >
+        {valor}
+      </Typography>
+      <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5, lineHeight: 1.4 }}>
+        {legenda}
+      </Typography>
+    </Box>
+  );
+}
+
 // ─── Badge de status ──────────────────────────────────────────────────────────
 function BadgeStatus({ alerta }) {
   return (
@@ -132,17 +203,18 @@ function DetalheZScore({ outliers }) {
       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', mb: 1 }}>
         Registros com desvio Z &gt; 4 — {outliers.length} identificado{outliers.length !== 1 ? 's' : ''}
       </Typography>
-      <Stack spacing={0.75}>
+      <Stack spacing={1}>
         {outliers.slice(0, 5).map((o, i) => (
-          <Stack key={i} direction="row" justifyContent="space-between" alignItems="center"
-            sx={{ p: 1.25, borderRadius: 1.5, bgcolor: '#FEF3C7', border: '1px solid', borderColor: '#FDE68A' }}>
-            <Box sx={{ minWidth: 0 }}>
+          <Stack key={i} direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }}
+            spacing={{ xs: 1, sm: 0 }}
+            sx={{ p: 1.5, borderRadius: 1.5, bgcolor: '#FEF3C7', border: '1px solid', borderColor: '#FDE68A' }}>
+            <Box sx={{ minWidth: 0, width: '100%' }}>
               <Typography variant="caption" fontWeight={600} sx={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {o.fornecedorNome}
               </Typography>
               <Typography variant="caption" color="text.secondary">{o.orgao}</Typography>
             </Box>
-            <Typography sx={{ fontFamily: '"Roboto Mono", monospace', fontVariantNumeric: 'tabular-nums', fontWeight: 700, fontSize: '0.8125rem', ml: 2, flexShrink: 0 }}>
+            <Typography sx={{ fontFamily: '"Roboto Mono", monospace', fontVariantNumeric: 'tabular-nums', fontWeight: 700, fontSize: '0.8125rem', ml: { xs: 0, sm: 2 }, flexShrink: 0 }}>
               {fmtCompacto(o.valor)}
             </Typography>
           </Stack>
@@ -205,11 +277,12 @@ function DetalheFracionamento({ anomalias }) {
       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', mb: 1 }}>
         Padrões de repetição detectados — {anomalias.length} ocorrência{anomalias.length !== 1 ? 's' : ''}
       </Typography>
-      <Stack spacing={0.75}>
+      <Stack spacing={1}>
         {anomalias.slice(0, 5).map((a, i) => (
-          <Stack key={i} direction="row" justifyContent="space-between" alignItems="center"
-            sx={{ p: 1.25, borderRadius: 1.5, bgcolor: '#FEF3C7', border: '1px solid', borderColor: '#FDE68A' }}>
-            <Box sx={{ minWidth: 0 }}>
+          <Stack key={i} direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }}
+            spacing={{ xs: 1, sm: 0 }}
+            sx={{ p: 1.5, borderRadius: 1.5, bgcolor: '#FEF3C7', border: '1px solid', borderColor: '#FDE68A' }}>
+            <Box sx={{ minWidth: 0, width: '100%' }}>
               <Typography variant="caption" fontWeight={600} sx={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {a.nome}
               </Typography>
@@ -220,7 +293,7 @@ function DetalheFracionamento({ anomalias }) {
             <Chip
               label={`${a.repeticoes}×`}
               size="small"
-              sx={{ bgcolor: '#B45309', color: '#fff', fontWeight: 700, fontSize: '0.6875rem', height: 22, ml: 1.5, flexShrink: 0 }}
+              sx={{ bgcolor: '#B45309', color: '#fff', fontWeight: 700, fontSize: '0.6875rem', height: 22, ml: { xs: 0, sm: 1.5 }, flexShrink: 0 }}
             />
           </Stack>
         ))}
@@ -240,11 +313,11 @@ function DetalheMonopolio({ departamentosDependentes }) {
       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', mb: 1 }}>
         Departamentos com dependência crítica — {departamentosDependentes.length} identificado{departamentosDependentes.length !== 1 ? 's' : ''}
       </Typography>
-      <Stack spacing={0.75}>
+      <Stack spacing={1}>
         {departamentosDependentes.slice(0, 5).map((d, i) => (
           <Box key={i} sx={{ p: 1.5, borderRadius: 1.5, bgcolor: '#FEF3C7', border: '1px solid', borderColor: '#FDE68A' }}>
-            <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-              <Box sx={{ minWidth: 0, mr: 1 }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'flex-start' }} spacing={{ xs: 1, sm: 0 }}>
+              <Box sx={{ minWidth: 0, mr: { sm: 1 }, width: '100%' }}>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {d.orgao}
                 </Typography>
@@ -280,13 +353,16 @@ function DetalheConcentracao({ dados }) {
       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', mb: 1 }}>
         Top 5 — {dados.percentual}% do total do período
       </Typography>
-      <Stack spacing={0.75}>
+      <Stack spacing={1}>
         {dados.top5.map((f, i) => (
-          <Stack key={f.id || i} direction="row" justifyContent="space-between" alignItems="center"
-            sx={{ p: 1.25, borderRadius: 1.5, bgcolor: '#FEF9F0', border: '1px solid', borderColor: '#FDE68A' }}>
-            <Typography variant="caption" fontWeight={600} sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', mr: 1 }}>
-              {f.nome}
-            </Typography>
+          <Stack key={f.id || i} direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }}
+            spacing={{ xs: 1, sm: 0 }}
+            sx={{ p: 1.5, borderRadius: 1.5, bgcolor: '#FEF9F0', border: '1px solid', borderColor: '#FDE68A' }}>
+            <Box sx={{ minWidth: 0, width: '100%' }}>
+              <Typography variant="caption" fontWeight={600} sx={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', mr: { sm: 1 } }}>
+                {f.nome}
+              </Typography>
+            </Box>
             <Typography sx={{ fontFamily: '"Roboto Mono", monospace', fontVariantNumeric: 'tabular-nums', fontWeight: 700, fontSize: '0.8125rem', flexShrink: 0 }}>
               {fmtCompacto(f.valorTotal)}
             </Typography>
@@ -312,8 +388,6 @@ function Detalhe({ tipo, dados }) {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function CardAlerta({ tipo, dados }) {
-  const [expandido, setExpandido] = useState(false);
-
   if (!dados) return null;
 
   const cfg = MOTOR_CONFIG[tipo];
@@ -322,7 +396,7 @@ export default function CardAlerta({ tipo, dados }) {
   const { alerta, titulo, insightEducativo } = dados;
   const { rotulo, tituloNormal, Icone, corIcone, fundoIcone, descricaoMetodo } = cfg;
   const tituloExibido = alerta ? titulo : tituloNormal;
-  const temDetalhe = alerta;
+  const metrica = extrairMetrica(tipo, dados);
 
   return (
     <Card
@@ -369,50 +443,34 @@ export default function CardAlerta({ tipo, dados }) {
             </Stack>
 
             {/* Título do resultado */}
-            <Typography variant="body2" fontWeight={700} color="text.primary" sx={{ mb: 0.75 }}>
+            <Typography variant="body2" fontWeight={700} color="text.primary">
               {tituloExibido}
             </Typography>
-
-            {/* Insight educativo */}
-            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.65 }}>
-              {insightEducativo}
-            </Typography>
           </Box>
-
-          {/* Botão de expansão — apenas quando há alerta com dados */}
-          {temDetalhe && (
-            <Tooltip title={expandido ? 'Recolher dados' : 'Ver dados brutos'} arrow>
-              <IconButton
-                size="small"
-                onClick={() => setExpandido((v) => !v)}
-                aria-label={expandido ? 'Recolher detalhes' : 'Expandir detalhes'}
-                sx={{
-                  flexShrink: 0,
-                  color: 'text.secondary',
-                  transition: 'transform 0.25s ease',
-                  transform: expandido ? 'rotate(180deg)' : 'rotate(0deg)',
-                }}
-              >
-                <ExpandMoreRoundedIcon />
-              </IconButton>
-            </Tooltip>
-          )}
         </Stack>
 
-        {/* ── Painel de dados expandido ─────────────────────────────────── */}
-        {temDetalhe && (
-          <Collapse in={expandido} timeout={280} unmountOnExit>
+        {/* ── Métrica principal: o dado é o herói ───────────────────────── */}
+        {metrica && <MetricaHeroi {...metrica} alerta={alerta} />}
+
+        {/* ── Registros que sustentam a métrica (sempre visíveis) ───────── */}
+        {alerta && (
+          <>
             <Divider sx={{ my: 2 }} />
             <Detalhe tipo={tipo} dados={dados} />
-          </Collapse>
+          </>
         )}
 
-        {/* ── Metodologia (sempre visível, discreta) ────────────────────── */}
-        <Box sx={{ mt: 2, pt: 1.5, borderTop: '1px dashed', borderColor: 'divider' }}>
-          <Typography variant="caption" color="text.disabled" sx={{ lineHeight: 1.5 }}>
+        {/* ── Explicação cidadã + metodologia (sob demanda) ─────────────── */}
+        <ExplicacaoCidada>
+          {insightEducativo && (
+            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.65, mb: 1.5 }}>
+              {insightEducativo}
+            </Typography>
+          )}
+          <Typography variant="caption" color="text.disabled" sx={{ lineHeight: 1.5, display: 'block' }}>
             <strong>Método:</strong> {descricaoMetodo}
           </Typography>
-        </Box>
+        </ExplicacaoCidada>
       </CardContent>
     </Card>
   );

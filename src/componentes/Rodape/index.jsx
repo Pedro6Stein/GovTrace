@@ -134,6 +134,7 @@ export default function Rodape() {
               </Typography>
               <Typography sx={{ color: DARK.textSecondary, fontSize: '0.75rem' }}>
                 Orientador: Prof. Clyton José da Rosa
+
               </Typography>
             </Stack>
 

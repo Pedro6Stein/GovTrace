@@ -384,7 +384,8 @@ export default function TabelaEvidenciasAvancada({ despesas }) {
           bgcolor: 'background.paper',
         }}
       >
-        <TableContainer sx={{ maxHeight: 680 }}>
+        <Box sx={{ width: '100%', overflowX: 'auto' }}>
+          <TableContainer sx={{ maxHeight: 680 }}>
           <Table stickyHeader size="small" aria-label="Tabela detalhada de evidências">
             <TableHead>
               <TableRow>
@@ -604,7 +605,8 @@ export default function TabelaEvidenciasAvancada({ despesas }) {
               )}
             </TableBody>
           </Table>
-        </TableContainer>
+          </TableContainer>
+        </Box>
 
         {/* ── Paginação ──────────────────────────────────────────────── */}
         <TablePagination
