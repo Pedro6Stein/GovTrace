@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 
 import {
   Box,
+  Button,
   Container,
   Fade,
   Paper,
@@ -9,13 +10,16 @@ import {
   Tab,
   Tabs,
   Typography,
+  useMediaQuery,
 } from '@mui/material';
-
+import { useTheme } from '@mui/material/styles';
 
 import AccountBalanceRoundedIcon from '@mui/icons-material/AccountBalanceRounded';
+import CloudOffRoundedIcon from '@mui/icons-material/CloudOffRounded';
 import ManageSearchRoundedIcon from '@mui/icons-material/ManageSearchRounded';
 import PlagiarismRoundedIcon from '@mui/icons-material/PlagiarismRounded';
 import QueryStatsRoundedIcon from '@mui/icons-material/QueryStatsRounded';
+import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
 
 import Cabecalho from '../../componentes/Cabecalho';
 import Rodape from '../../componentes/Rodape';
@@ -36,33 +40,49 @@ import PainelAuditoria from '../../componentes/abaAuditoria/PainelAuditoria';
 import TabelaEvidenciasAvancada from '../../componentes/abaEvidencias/TabelaEvidenciasAvancada';
 
 import { buscarAnalise } from '../../servicos/apiGovtrace';
+import { formatarPeriodo } from '../../utilitarios/formatadores';
+
 // ─── Definição das 4 abas ────────────────────────────────────────────────────
+// rotuloCurto: usado no celular, onde as 4 abas precisam caber lado a lado
 const ABAS = [
   {
     id: 'cidade',
     rotulo: 'A Cidade',
+    rotuloCurto: 'Cidade',
     icone: AccountBalanceRoundedIcon,
     descricao: 'Visão macro dos gastos municipais',
   },
   {
     id: 'exploracao',
     rotulo: 'Exploração',
+    rotuloCurto: 'Explorar',
     icone: ManageSearchRoundedIcon,
     descricao: 'Fornecedores e destinatários dos recursos',
   },
   {
     id: 'auditoria',
     rotulo: 'Auditoria Algorítmica',
+    rotuloCurto: 'Auditoria',
     icone: QueryStatsRoundedIcon,
     descricao: 'Motores de análise estatística',
   },
   {
     id: 'evidencias',
     rotulo: 'Evidências',
+    rotuloCurto: 'Evidências',
     icone: PlagiarismRoundedIcon,
     descricao: 'Registros brutos para rastreabilidade',
   },
 ];
+
+// Superfície dos estados vazios/erro — raio explícito em px: no sx do MUI,
+// "borderRadius: 4" vira 4 × 16px = 64px (efeito "pílula" exagerado)
+const estiloEstado = {
+  textAlign: 'center',
+  py: { xs: 6, sm: 10 },
+  px: { xs: 2.5, sm: 4 },
+  borderRadius: '20px',
+};
 
 // ─── Estado inicial dos filtros — SEMPRE dinâmico, NUNCA hardcoded ───────────
 // O SeletorPeriodo carrega as cidades do IBGE e o usuário escolhe.
@@ -75,12 +95,15 @@ const FILTROS_INICIAIS = {
 
 // ─── Componente principal ─────────────────────────────────────────────────────
 export default function Painel() {
+  const tema = useTheme();
+  const ehCelular = useMediaQuery(tema.breakpoints.down('sm'));
+
   // Estado de navegação entre abas
   const [abaAtiva, setAbaAtiva] = useState(0);
 
-  // Estado de ciclo de vida da requisição
+  // Estado de ciclo de vida da requisição (erro guarda a mensagem real da API)
   const [carregando, setCarregando] = useState(false);
-  const [erro, setErro] = useState(false);
+  const [erro, setErro] = useState(null);
 
   // Dados recebidos prontos da GovTrace API (nenhum cálculo no front)
   const [dadosBrutos, setDadosBrutos] = useState([]);
@@ -103,7 +126,7 @@ export default function Painel() {
 
     const carregarDados = async () => {
       setCarregando(true);
-      setErro(false);
+      setErro(null);
 
       try {
         const analise = await buscarAnalise(filtros.municipio, filtros.ano, filtros.mes, {
@@ -118,7 +141,7 @@ export default function Painel() {
       } catch (err) {
         if (err.name === 'AbortError') return;
         console.error('[GovTrace] Falha ao consultar a GovTrace API:', err);
-        setErro(true);
+        setErro(err.message || 'Não foi possível consultar os dados.');
       } finally {
         if (!controlador.signal.aborted) setCarregando(false);
       }
@@ -138,31 +161,24 @@ export default function Painel() {
     filtros,
   };
 
+  // Refaz a consulta com os mesmos filtros (novo objeto dispara o useEffect)
+  const tentarNovamente = () => setFiltros((atual) => ({ ...atual }));
+
   // ─── Renderização condicional do conteúdo ─────────────────────────────────
   const renderConteudo = () => {
     if (!filtros.municipio) {
       return (
         <Paper
           elevation={0}
-          sx={{
-            textAlign: 'center',
-            py: 12,
-            px: 4,
-            borderRadius: 4,
-            border: '2px dashed',
-            borderColor: 'divider',
-            bgcolor: 'background.paper',
-          }}
+          sx={{ ...estiloEstado, border: '2px dashed', borderColor: '#CBD5E1', bgcolor: 'background.paper' }}
         >
-          <AccountBalanceRoundedIcon
-            sx={{ fontSize: 56, color: 'primary.main', opacity: 0.4, mb: 2 }}
-          />
-          <Typography variant="h5" color="text.secondary" gutterBottom fontWeight={600}>
+          <AccountBalanceRoundedIcon aria-hidden sx={{ fontSize: 56, color: 'primary.main', opacity: 0.5, mb: 2 }} />
+          <Typography component="h2" sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' }, fontWeight: 700, color: 'text.primary', mb: 1 }}>
             Selecione um município para começar
           </Typography>
-          <Typography variant="body2" color="text.disabled" sx={{ maxWidth: 420, mx: 'auto' }}>
-            Escolha o município, o ano e o mês acima para carregar os dados
-            oficiais do Tribunal de Contas do Estado de São Paulo.
+          <Typography sx={{ fontSize: '1rem', color: 'text.secondary', maxWidth: 440, mx: 'auto', lineHeight: 1.6 }}>
+            Escolha a cidade, o ano e o mês acima para ver como o dinheiro público foi usado,
+            com dados oficiais do Tribunal de Contas do Estado de São Paulo.
           </Typography>
         </Paper>
       );
@@ -170,7 +186,10 @@ export default function Painel() {
 
     if (carregando) {
       return (
-        <Box sx={{ py: 2 }}>
+        <Box role="status" aria-live="polite" sx={{ py: 1 }}>
+          <Typography sx={{ mb: 2, color: 'text.secondary', fontSize: '1rem' }}>
+            Consultando os dados oficiais de <strong>{filtros.municipio}</strong>… isso pode levar alguns segundos.
+          </Typography>
           <SkeletonPainel />
         </Box>
       );
@@ -179,50 +198,41 @@ export default function Painel() {
     if (erro) {
       return (
         <Paper
+          role="alert"
           elevation={0}
-          sx={{
-            textAlign: 'center',
-            py: 10,
-            px: 4,
-            borderRadius: 4,
-            border: '1px solid',
-            borderColor: 'error.light',
-            bgcolor: '#FEF2F2',
-          }}
+          sx={{ ...estiloEstado, border: '1px solid', borderColor: '#FCA5A5', bgcolor: '#FEF2F2' }}
         >
-          <Typography variant="h5" color="error.main" gutterBottom fontWeight={600}>
+          <CloudOffRoundedIcon aria-hidden sx={{ fontSize: 48, color: 'error.main', mb: 1.5 }} />
+          <Typography component="h2" sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' }, fontWeight: 700, color: 'error.main', mb: 1 }}>
             Não foi possível consultar os dados
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 400, mx: 'auto' }}>
-            O servidor do TCE-SP pode estar temporariamente indisponível.
-            Verifique sua conexão e tente novamente em alguns instantes.
+          {/* Mensagem real devolvida pela GovTrace API (ex: "O TCE-SP não respondeu em 30 segundos") */}
+          <Typography sx={{ fontSize: '1rem', color: 'text.primary', maxWidth: 480, mx: 'auto', lineHeight: 1.6 }}>
+            {erro}
           </Typography>
+          <Button
+            variant="contained"
+            startIcon={<RefreshRoundedIcon />}
+            onClick={tentarNovamente}
+            sx={{ mt: 3, px: 3 }}
+          >
+            Tentar novamente
+          </Button>
         </Paper>
       );
     }
 
     if (!dadosBrutos.length) {
       return (
-        <Paper
-          elevation={1}
-          sx={{
-            textAlign: 'center',
-            py: 10,
-            px: 4,
-            borderRadius: 4,
-          }}
-        >
-          <Typography variant="h5" color="text.secondary" gutterBottom fontWeight={600}>
-            Sem Registros Oficiais
+        <Paper elevation={1} sx={estiloEstado}>
+          <Typography component="h2" sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' }, fontWeight: 700, color: 'text.primary', mb: 1 }}>
+            Sem registros oficiais neste período
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 460, mx: 'auto' }}>
-            O Tribunal de Contas (TCE-SP) ainda não disponibilizou notas fiscais
-            ou empenhos para{' '}
-            <strong>{filtros.municipio}</strong> no período de{' '}
-            <strong>
-              {filtros.mes}/{filtros.ano}
-            </strong>
-            . Isso é comum em meses muito recentes ou em fechamento de balanço.
+          <Typography sx={{ fontSize: '1rem', color: 'text.secondary', maxWidth: 480, mx: 'auto', lineHeight: 1.6 }}>
+            O Tribunal de Contas (TCE-SP) ainda não publicou empenhos de{' '}
+            <strong>{filtros.municipio}</strong> para{' '}
+            <strong>{formatarPeriodo(filtros.mes, filtros.ano)}</strong>.
+            Isso é comum em meses muito recentes. Tente um mês anterior.
           </Typography>
         </Paper>
       );
@@ -231,43 +241,36 @@ export default function Painel() {
     // ── Painel com abas ──────────────────────────────────────────────────────
     return (
       <Box>
-        {/* Barra de abas */}
+        {/* Barra de abas: no celular, 4 abas visíveis lado a lado (sem setas
+            escondendo opções); do tablet em diante, ícone + rótulo completo */}
         <Paper
           elevation={0}
-          sx={{
-            borderRadius: 3,
-            border: '1px solid',
-            borderColor: 'divider',
-            mb: 3,
-            overflow: 'hidden',
-          }}
+          sx={{ borderRadius: '16px', border: '1px solid', borderColor: 'divider', mb: { xs: 2.5, sm: 3 }, overflow: 'hidden' }}
         >
           <Tabs
             value={abaAtiva}
             onChange={(_, novaAba) => setAbaAtiva(novaAba)}
-            variant="scrollable"
-            scrollButtons="auto"
-            allowScrollButtonsMobile
+            variant={ehCelular ? 'fullWidth' : 'scrollable'}
+            scrollButtons={ehCelular ? false : 'auto'}
             textColor="primary"
             indicatorColor="primary"
-            aria-label="Abas de navegação do GovTrace"
-            sx={{
-              bgcolor: 'background.paper',
-              px: { xs: 1, sm: 2 },
-            }}
+            aria-label="Seções da análise"
+            sx={{ bgcolor: 'background.paper', px: { xs: 0, sm: 2 } }}
           >
-            {ABAS.map((aba, idx) => {
+            {ABAS.map((aba) => {
               const Icone = aba.icone;
               return (
                 <Tab
                   key={aba.id}
                   id={`aba-${aba.id}`}
                   aria-controls={`painel-${aba.id}`}
-                  label={
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Icone fontSize="small" />
-                      <span>{aba.rotulo}</span>
-                    </Stack>
+                  icon={<Icone fontSize="small" />}
+                  iconPosition={ehCelular ? 'top' : 'start'}
+                  label={ehCelular ? aba.rotuloCurto : aba.rotulo}
+                  sx={
+                    ehCelular
+                      ? { minWidth: 0, minHeight: 64, px: 0.5, fontSize: '0.8125rem', gap: 0.5, '& .MuiTab-iconWrapper': { mb: 0 } }
+                      : { minHeight: 56, gap: 1 }
                   }
                 />
               );
@@ -291,24 +294,41 @@ export default function Painel() {
   };
 
   // ─── Layout raiz ──────────────────────────────────────────────────────────
+  // Sem "width: 100vw" nem "overflowX: hidden": 100vw inclui a barra de
+  // rolagem (gera scroll horizontal no Windows) e o overflow hidden apenas
+  // ESCONDIA os vazamentos — além de quebrar o position:sticky do cabeçalho.
   return (
-    <Box
-      sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: '100vh',
-        width: '100vw',        // Trava: nunca ultrapassa a viewport
-        maxWidth: '100vw',
-        overflowX: 'hidden',   // Mata qualquer scroll horizontal residual
-        bgcolor: 'background.default',
-      }}
-    >
+    <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', bgcolor: 'background.default' }}>
+      {/* Atalho de teclado para pular o cabeçalho (WCAG 2.4.1) */}
+      <Box
+        component="a"
+        href="#conteudo"
+        sx={{
+          position: 'absolute',
+          left: 16,
+          top: -100,
+          zIndex: 2000,
+          px: 2,
+          py: 1.5,
+          borderRadius: '10px',
+          bgcolor: 'primary.main',
+          color: '#FFFFFF',
+          fontWeight: 600,
+          textDecoration: 'none',
+          '&:focus': { top: 16 },
+        }}
+      >
+        Pular para o conteúdo
+      </Box>
+
       <Cabecalho />
 
       <Container
-        maxWidth="xl"
+        maxWidth="lg"
         component="main"
-        sx={{ flexGrow: 1, py: { xs: 2, sm: 3 }, px: { xs: 1.5, sm: 3, md: 4 } }}
+        id="conteudo"
+        tabIndex={-1}
+        sx={{ flexGrow: 1, py: { xs: 2.5, sm: 4 }, '&:focus': { outline: 'none' } }}
       >
         <SeletorPeriodo filtros={filtros} onFiltroChange={setFiltros} />
 
@@ -338,35 +358,22 @@ function PainelAba({ children, ativo, id, 'aria-labelledby': labelledBy }) {
   );
 }
 
-// ─── Componente auxiliar: conteúdo provisório por aba ────────────────────────
-// ATENÇÃO: O interior de cada aba é provisório e será substituído
-// nas etapas seguintes da refatoração. A estrutura de rotas e
-// o fluxo de dados (propsAbas) já estão conectados e prontos.
+// ─── Componente auxiliar: conteúdo de cada aba ───────────────────────────────
 function ConteudoAba({ id, props }) {
-  const estiloPlaceholder = {
-    p: 4,
-    borderRadius: 3,
-    border: '2px dashed',
-    borderColor: 'primary.light',
-    bgcolor: 'background.paper',
-    textAlign: 'center',
-    opacity: 0.7,
-  };
-
   switch (id) {
     case 'cidade':
       return (
-        <Stack spacing={3}>
-          {/* Métricas macro + insight de concentração */}
+        <Stack spacing={{ xs: 2.5, sm: 3 }}>
+          {/* Indicadores macro + concentração de mercado */}
           <HeroCidade
             totais={props.totais}
             concentracao={props.insights?.concentracao}
+            filtros={props.filtros}
           />
           {/* Distribuição por área social */}
           <GraficoDestino distribuicao={props.distribuicao} />
         </Stack>
       );
-
 
     case 'exploracao':
       return (
@@ -377,14 +384,11 @@ function ConteudoAba({ id, props }) {
         />
       );
 
-
     case 'auditoria':
       return <PainelAuditoria insights={props.insights} />;
 
-
     case 'evidencias':
       return <TabelaEvidenciasAvancada despesas={props.dadosBrutos} />;
-
 
     default:
       return null;

@@ -1,13 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import {
-  Box,
-  Card,
-  CardContent,
-  Stack,
-  Tooltip,
-  Typography,
-} from '@mui/material';
+import { Box, Card, CardContent, Stack, Typography } from '@mui/material';
 
 import AccountBalanceRoundedIcon from '@mui/icons-material/AccountBalanceRounded';
 import CleaningServicesRoundedIcon from '@mui/icons-material/CleaningServicesRounded';
@@ -20,318 +13,224 @@ import PersonRoundedIcon from '@mui/icons-material/PersonRounded';
 import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
 import SchoolRoundedIcon from '@mui/icons-material/SchoolRounded';
 
+import ExplicacaoCidada from '../ExplicacaoCidada';
+import { formatarMoeda, formatarMoedaExtenso, formatarPercentual } from '../../utilitarios/formatadores';
+
 /**
  * GraficoDestino — "Para onde foi o dinheiro?"
  *
- * Traduz o array de distribuição por categoria em barras horizontais animadas.
- * As chaves do objeto CATEGORIA correspondem EXATAMENTE às strings retornadas
- * pelo motor de categorização semântica da GovTrace API (dominio/regrasCategorias.js).
+ * Barras horizontais em ESCALA REAL: a largura é a fatia do total (0–100%),
+ * não relativa à maior categoria — normalizar pelo máximo faria 47% parecer
+ * "tudo". Nomes nunca são truncados; a barra é decorativa (aria-hidden),
+ * pois nome, percentual e valor estão sempre em texto.
+ *
+ * As chaves de CATEGORIA são idênticas às strings da GovTrace API
+ * (dominio/regrasCategorias.js).
  *
  * Props:
- *   distribuicao  Array<{ nome: string, valor: number, percentual: string }>
+ *   distribuicao  Array<{ nome: string, valor: number, percentual: number }>
  */
 
-// ─── Mapeamento categoria → ícone + cor ──────────────────────────────────────
-// ATENÇÃO: as chaves devem ser idênticas (char-by-char) ao retorno do motor NLP.
+// Cores com contraste ≥ 3:1 sobre branco (WCAG 1.4.11 — objetos gráficos)
 const CATEGORIA = {
   'Saúde e Medicamentos': {
     Icone: LocalHospitalRoundedIcon,
     cor: '#0284C7',
-    fundo: '#EFF8FF',
-    descricao: 'Hospitais, UBSs, drogarias, medicamentos e serviços de saúde pública',
+    descricao: 'Hospitais, UBSs, drogarias, medicamentos e serviços de saúde pública.',
   },
   'Educação e Ensino': {
     Icone: SchoolRoundedIcon,
     cor: '#7C3AED',
-    fundo: '#F5F3FF',
-    descricao: 'Escolas, creches, merenda escolar, material didático e capacitação',
+    descricao: 'Escolas, creches, merenda escolar, material didático e capacitação.',
   },
   'Infraestrutura, Obras e Urbanismo': {
     Icone: ConstructionRoundedIcon,
     cor: '#B45309',
-    fundo: '#FFFBEB',
-    descricao: 'Pavimentação, saneamento, obras civis, materiais de construção e urbanismo',
+    descricao: 'Pavimentação, saneamento, obras civis, materiais de construção e urbanismo.',
   },
   'Transporte, Frotas e Mobilidade': {
     Icone: DirectionsBusRoundedIcon,
     cor: '#0369A1',
-    fundo: '#F0F9FF',
-    descricao: 'Combustível, manutenção de frota, transporte escolar e locação de veículos',
+    descricao: 'Combustível, manutenção de frota, transporte escolar e locação de veículos.',
   },
   'Tecnologia e Comunicação': {
     Icone: ComputerRoundedIcon,
     cor: '#0F766E',
-    fundo: '#F0FDFA',
-    descricao: 'Softwares, equipamentos de TI, redes, telecom e licenciamentos',
+    descricao: 'Softwares, equipamentos de informática, redes, telefonia e licenças.',
   },
   'Alimentação e Abastecimento': {
     Icone: RestaurantRoundedIcon,
-    cor: '#16A34A',
-    fundo: '#DCFCE7',
-    descricao: 'Gêneros alimentícios, cestas básicas, refeições e abastecimento municipal',
+    cor: '#15803D',
+    descricao: 'Alimentos, cestas básicas, refeições e abastecimento municipal.',
   },
   'Cultura, Esporte e Lazer': {
     Icone: PaletteRoundedIcon,
-    cor: '#C98B22',
-    fundo: '#FEFCE8',
-    descricao: 'Eventos culturais, praças esportivas, museus e atividades de lazer',
+    cor: '#A16207',
+    descricao: 'Eventos culturais, praças esportivas, museus e atividades de lazer.',
   },
   'Administração, Limpeza e Serviços Terceirizados': {
     Icone: CleaningServicesRoundedIcon,
     cor: '#475569',
-    fundo: '#F8FAFC',
-    descricao: 'Limpeza, zeladoria, vigilância, manutenção predial e serviços gerais',
+    descricao: 'Limpeza, zeladoria, vigilância, manutenção predial e serviços gerais.',
   },
   'Máquina Pública, Repasses e Encargos': {
     Icone: AccountBalanceRoundedIcon,
     cor: '#64748B',
-    fundo: '#F1F5F9',
-    descricao: 'Repasses intergovernamentais, encargos previdenciários, tributos e dívida pública',
+    descricao: 'Repasses entre governos, encargos previdenciários, tributos e dívida pública.',
   },
   'Pessoa Física / Autônomo': {
     Icone: PersonRoundedIcon,
-    cor: '#94A3B8',
-    fundo: '#F1F5F9',
-    descricao: 'Contratos com profissionais autônomos, MEIs ou prestadores individuais identificados por CPF',
+    cor: '#DB2777',
+    descricao: 'Pagamentos a pessoas identificadas por CPF: autônomos, prestadores individuais e folha.',
   },
 };
 
-const FALLBACK = {
+const PADRAO = {
   Icone: AccountBalanceRoundedIcon,
-  cor: '#94A3B8',
-  fundo: '#F8FAFC',
-  descricao: 'Setor público não categorizado',
+  cor: '#64748B',
+  descricao: 'Despesa pública sem categoria identificada.',
 };
 
-// ─── Formata valor monetário de forma compacta ────────────────────────────────
-function fmtCompacto(v) {
-  if (v >= 1_000_000)
-    return 'R$ ' + (v / 1_000_000).toFixed(1).replace('.', ',') + ' mi';
-  if (v >= 1_000)
-    return 'R$ ' + (v / 1_000).toFixed(0) + ' mil';
-  return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 0 });
-}
-
-function fmtCompleto(v) {
-  return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
-
-// ─── Linha de categoria com barra animada ────────────────────────────────────
-function LinhaCategoria({ item, animado, maxPercentual }) {
-  const cfg = CATEGORIA[item.nome] || FALLBACK;
-  const { Icone, cor, fundo, descricao } = cfg;
-  const pct = parseFloat(item.percentual) || 0;
-  // Normaliza as barras: a maior categoria ocupa 100% da área, as demais são proporcionais
-  const larguraBarra = animado ? (pct / maxPercentual) * 100 : 0;
+// ─── Linha da categoria ──────────────────────────────────────────────────────
+function LinhaCategoria({ item, animado }) {
+  const { Icone, cor } = CATEGORIA[item.nome] || PADRAO;
+  const percentual = Number(item.percentual) || 0;
+  const largura = animado ? Math.min(Math.max(percentual, 0), 100) : 0;
 
   return (
-    <Tooltip
-      title={`${descricao} — ${fmtCompleto(item.valor)}`}
-      arrow
-      placement="top"
-      enterTouchDelay={0}
-    >
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: { xs: '1fr', sm: '180px 1fr 80px' },
-          gap: { xs: 0.5, sm: 2 },
-          alignItems: 'center',
-          py: 1.5,
-          px: { xs: 0, sm: 0 },
-          cursor: 'default',
-          borderRadius: 2,
-          transition: 'background-color 0.15s ease',
-          '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
-        }}
-      >
-        {/* ── Ícone + nome ──────────────────────────────────────────── */}
-        <Stack direction="row" alignItems="center" spacing={1.5}>
-          <Box
-            sx={{
-              width: 36,
-              height: 36,
-              borderRadius: '10px',
-              bgcolor: fundo,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              border: '1px solid',
-              borderColor: `${cor}22`,
-            }}
-          >
-            <Icone sx={{ fontSize: 18, color: cor }} />
+    <Box component="li" sx={{ py: { xs: 1.75, sm: 2 }, listStyle: 'none' }}>
+      <Stack direction="row" spacing={{ xs: 1.5, sm: 2 }} alignItems="flex-start">
+        <Box
+          aria-hidden
+          sx={{
+            width: 40,
+            height: 40,
+            borderRadius: '10px',
+            bgcolor: `${cor}14`,
+            color: cor,
+            display: 'grid',
+            placeItems: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <Icone sx={{ fontSize: 22 }} />
+        </Box>
+
+        {/* minWidth: 0 permite ao bloco encolher dentro do flex — sem isso,
+            o nome longo impõe sua largura mínima e empurra o card */}
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Stack direction="row" justifyContent="space-between" alignItems="baseline" spacing={1.5}>
+            <Typography
+              component="span"
+              sx={{ fontSize: '0.9375rem', fontWeight: 600, color: 'text.primary', lineHeight: 1.35, minWidth: 0, overflowWrap: 'anywhere' }}
+            >
+              {item.nome}
+            </Typography>
+            <Typography
+              component="span"
+              sx={{ fontSize: '1.0625rem', fontWeight: 700, color: 'text.primary', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', flexShrink: 0 }}
+            >
+              {formatarPercentual(percentual)}
+            </Typography>
+          </Stack>
+
+          {/* Trilho = 100% do período; preenchimento = fatia real */}
+          <Box aria-hidden sx={{ mt: 1, height: 10, borderRadius: '5px', bgcolor: '#EEF1F4', overflow: 'hidden' }}>
+            <Box
+              sx={{
+                height: '100%',
+                width: `${largura}%`,
+                minWidth: largura > 0 ? 4 : 0,
+                borderRadius: '5px',
+                bgcolor: cor,
+                transition: 'width 0.9s cubic-bezier(0.22, 1, 0.36, 1)',
+              }}
+            />
           </Box>
+
           <Typography
-            variant="body2"
-            fontWeight={600}
-            color="text.primary"
-            sx={{
-              lineHeight: 1.2,
-              // Em mobile, linha única com overflow
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: { xs: 'nowrap', sm: 'normal' },
-              maxWidth: { xs: 'calc(100% - 52px)', sm: 'none' },
-            }}
+            component="span"
+            sx={{ display: 'block', mt: 0.75, fontSize: '0.875rem', color: 'text.secondary', fontVariantNumeric: 'tabular-nums' }}
+            title={formatarMoeda(item.valor)}
           >
-            {item.nome}
+            {formatarMoedaExtenso(item.valor)}
           </Typography>
-        </Stack>
-
-        {/* ── Barra de progresso animada ────────────────────────────── */}
-        <Box
-          sx={{
-            display: { xs: 'none', sm: 'block' },
-            height: 10,
-            bgcolor: '#F1F3F4',
-            borderRadius: '5px',
-            overflow: 'hidden',
-          }}
-        >
-          <Box
-            sx={{
-              height: '100%',
-              width: `${larguraBarra}%`,
-              bgcolor: cor,
-              borderRadius: '5px',
-              transition: 'width 0.9s cubic-bezier(0.22, 1, 0.36, 1)',
-              opacity: 0.85,
-            }}
-          />
         </Box>
-
-        {/* Barra mobile (mais simples, height menor) */}
-        <Box
-          sx={{
-            display: { xs: 'block', sm: 'none' },
-            height: 6,
-            bgcolor: '#F1F3F4',
-            borderRadius: '3px',
-            overflow: 'hidden',
-            mt: 0.5,
-          }}
-        >
-          <Box
-            sx={{
-              height: '100%',
-              width: `${larguraBarra}%`,
-              bgcolor: cor,
-              borderRadius: '3px',
-              transition: 'width 0.9s cubic-bezier(0.22, 1, 0.36, 1)',
-            }}
-          />
-        </Box>
-
-        {/* ── Percentual + valor ────────────────────────────────────── */}
-        <Stack alignItems={{ xs: 'flex-start', sm: 'flex-end' }} sx={{ mt: { xs: 0, sm: 0 } }}>
-          <Typography
-            sx={{
-              fontFamily: '"Roboto Mono", monospace',
-              fontVariantNumeric: 'tabular-nums',
-              fontWeight: 700,
-              fontSize: '0.9375rem',
-              color: cor,
-            }}
-          >
-            {item.percentual}%
-          </Typography>
-          <Typography variant="caption" color="text.disabled" sx={{ lineHeight: 1 }}>
-            {fmtCompacto(item.valor)}
-          </Typography>
-        </Stack>
-      </Box>
-    </Tooltip>
+      </Stack>
+    </Box>
   );
 }
 
 // ─── Componente principal ────────────────────────────────────────────────────
 export default function GraficoDestino({ distribuicao }) {
-  // Dispara a animação das barras após a montagem (evita repintura no 0%)
+  // Anima as barras a partir de 0 a cada nova consulta
   const [animado, setAnimado] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setAnimado(true), 120);
-    return () => clearTimeout(t);
-  }, []);
-
-  // Re-anima quando os dados mudam (nova consulta)
-  useEffect(() => {
     setAnimado(false);
-    const t = setTimeout(() => setAnimado(true), 120);
+    const t = setTimeout(() => setAnimado(true), 80);
     return () => clearTimeout(t);
   }, [distribuicao]);
 
-  if (!distribuicao || distribuicao.length === 0) return null;
+  if (!distribuicao?.length) return null;
 
-  // Percentual da categoria de maior peso (normalização visual das barras)
-  const maxPercentual = Math.max(...distribuicao.map((d) => parseFloat(d.percentual) || 0));
+  const [maior] = distribuicao; // A API entrega ordenado do maior para o menor
 
   return (
-    <Card elevation={1}>
-      <CardContent sx={{ p: { xs: 2.5, sm: 3.5 }, '&:last-child': { pb: { xs: 2.5, sm: 3.5 } } }}>
-        {/* Título da seção */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="h6" fontWeight={700} color="text.primary">
-            Para onde foi o dinheiro?
-          </Typography>
-          <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
-            Distribuição estimada por área social com base nos órgãos responsáveis pelos empenhos.
-          </Typography>
-        </Box>
+    <Card component="section" aria-labelledby="titulo-destino" sx={{ minWidth: 0 }}>
+      <CardContent sx={{ p: { xs: 2.5, sm: 3.5 }, '&:last-child': { pb: { xs: 1.5, sm: 2.5 } } }}>
+        <Typography
+          id="titulo-destino"
+          component="h2"
+          sx={{ fontSize: 'clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem)', fontWeight: 700, color: 'text.primary', lineHeight: 1.25 }}
+        >
+          Para onde foi o dinheiro?
+        </Typography>
 
-        {/* Cabeçalho de colunas — apenas desktop */}
+        {/* Frase-resumo: a conclusão principal antes dos detalhes */}
+        <Typography sx={{ mt: 1, fontSize: '1rem', color: 'text.secondary', lineHeight: 1.6 }}>
+          A maior fatia foi para{' '}
+          <Box component="strong" sx={{ color: 'text.primary' }}>{maior.nome}</Box>:{' '}
+          <Box component="strong" sx={{ color: 'text.primary', whiteSpace: 'nowrap' }}>
+            {formatarPercentual(maior.percentual)}
+          </Box>{' '}
+          do total ({formatarMoedaExtenso(maior.valor)}).
+        </Typography>
+
         <Box
+          component="ol"
+          aria-label="Distribuição do dinheiro por área, da maior para a menor"
           sx={{
-            display: { xs: 'none', sm: 'grid' },
-            gridTemplateColumns: '180px 1fr 80px',
-            gap: 2,
-            mb: 1,
-            pb: 1,
-            borderBottom: '1px solid',
-            borderColor: 'divider',
+            m: 0,
+            mt: 2,
+            p: 0,
+            '& > li + li': { borderTop: '1px solid', borderColor: 'divider' },
           }}
         >
-          {['Área', 'Proporção do período', '%'].map((label) => (
-            <Typography
-              key={label}
-              variant="caption"
-              color="text.disabled"
-              fontWeight={700}
-              textTransform="uppercase"
-              letterSpacing="0.06em"
-            >
-              {label}
-            </Typography>
+          {distribuicao.map((item) => (
+            <LinhaCategoria key={item.nome} item={item} animado={animado} />
           ))}
         </Box>
 
-        {/* Linhas de categoria */}
-        <Stack
-          divider={
-            <Box sx={{ height: '1px', bgcolor: 'divider', mx: { xs: 0, sm: 0 } }} />
-          }
-        >
-          {distribuicao.map((item) => (
-            <LinhaCategoria
-              key={item.nome}
-              item={item}
-              animado={animado}
-              maxPercentual={maxPercentual}
-            />
-          ))}
-        </Stack>
-
-        {/* Nota de rodapé */}
-        <Typography
-          variant="caption"
-          color="text.disabled"
-          sx={{ display: 'block', mt: 2.5, lineHeight: 1.5 }}
-        >
-          * Categorização estimada por palavra-chave no nome do órgão. Pode divergir da
-          classificação oficial da Lei 4.320/64.
-        </Typography>
+        <ExplicacaoCidada rotulo="Como as áreas são definidas">
+          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, mb: 1.5 }}>
+            Cada despesa é classificada automaticamente a partir do nome do órgão e do fornecedor.
+            É uma <strong>estimativa</strong> e pode divergir da classificação contábil oficial
+            (Lei 4.320/64).
+          </Typography>
+          <Box component="dl" sx={{ m: 0, display: 'grid', gap: 1 }}>
+            {distribuicao.map(({ nome }) => (
+              <Box key={nome}>
+                <Typography component="dt" variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                  {nome}
+                </Typography>
+                <Typography component="dd" variant="body2" sx={{ m: 0, color: 'text.secondary' }}>
+                  {(CATEGORIA[nome] || PADRAO).descricao}
+                </Typography>
+              </Box>
+            ))}
+          </Box>
+        </ExplicacaoCidada>
       </CardContent>
     </Card>
   );

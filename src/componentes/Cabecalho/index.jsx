@@ -96,9 +96,9 @@ export default function Cabecalho() {
                 {/* Logotipo + subtítulo */}
                 <Box>
                   <Stack direction="row" alignItems="center" spacing={1}>
-                    {/* Nome do produto */}
+                    {/* Nome do produto — único <h1> da página (navegação por títulos) */}
                     <Typography
-                      component="span"
+                      component="h1"
                       sx={{
                         fontSize: { xs: '1.125rem', sm: '1.25rem' },
                         fontWeight: 700,
@@ -121,7 +121,7 @@ export default function Cabecalho() {
                         letterSpacing: '0.03em',
                         textTransform: 'uppercase',
                         bgcolor: 'secondary.light',
-                        color: 'secondary.dark',
+                        color: '#744A00', // 5,2:1 sobre o dourado (secondary.dark dava 4,0:1)
                         display: { xs: 'none', sm: 'flex' },
                         px: 0.5,
                       }}

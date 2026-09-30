@@ -1,246 +1,195 @@
 import { useState } from 'react';
 
-import {
-  Box,
-  Container,
-  Divider,
-  Link,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Container, Link, Stack, Typography } from '@mui/material';
+import { visuallyHidden } from '@mui/utils';
 
 import AccountBalanceRoundedIcon from '@mui/icons-material/AccountBalanceRounded';
+import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
 
+import ModalAcessibilidade from '../ModalAcessibilidade';
 import ModalMetodologia from '../ModalMetodologia';
 import ModalSobre from '../Sobre';
 
 /**
- * Rodape — Rodapé institucional escuro ancorado (Slate Charcoal #1E293B)
+ * Rodape — Rodapé institucional escuro (Slate Charcoal #1E293B)
  *
- * Filosofia visual (MD3):
- * - Fundo escuro ancora a página e descansa os olhos ao fim da rolagem.
- * - Sem blocos brancos — só texto claro em escala de cinza sobre charcoal.
- * - Layout compacto em grid 3 colunas + barra de copyright fina.
- * - Acento vermelho institucional pontual (ícone da marca).
+ * - Ações que abrem modais são <button> (não <a href="#">, que muda a URL
+ *   e rola a página para o topo).
+ * - Links externos avisam que abrem em nova aba (ícone + texto oculto).
+ * - Todos os pares de cor medidos: ≥ 4,5:1 sobre o fundo escuro.
  */
 
-// ─── Constantes de cor local (não disponíveis no tema claro) ─────────────────
-const DARK = {
-  bg: '#1E293B',           // Slate Charcoal — fundo principal do rodapé
-  bgBar: '#162030',        // Slate mais escuro — barra de copyright
-  border: '#2D3F55',       // Separador discreto sobre o fundo escuro
-  textPrimary: '#E2E8F0',  // Slate 200 — texto principal (marca, nomes)
-  textSecondary: '#94A3B8',// Slate 400 — subtextos, legendas
-  link: '#CBD5E1',         // Slate 300 — links em repouso
-  linkHover: '#FFFFFF',    // Branco — hover nos links
-  accent: '#c41230',       // Vermelho institucional — pontual
+const ESCURO = {
+  fundo: '#1E293B',        // Slate 800
+  fundoBarra: '#162030',
+  borda: '#2D3F55',
+  texto: '#E2E8F0',        // 13,5:1
+  textoSuave: '#94A3B8',   //  5,7:1
+  link: '#CBD5E1',         //  9,9:1
+  titulo: '#FCA5A5',       //  7,7:1 — vermelho claro (o #c41230 anterior tinha 2,4:1)
 };
 
-export default function Rodape() {
-  const [modalAberto, setModalAberto] = useState(false);
-  const [modalSobreAberto, setModalSobreAberto] = useState(false);
+// Mesmo visual para <a> e <button>, com área de clique ≥ 32px
+const estiloLink = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: 0.75,
+  minHeight: 32,
+  p: 0,
+  color: ESCURO.link,
+  fontSize: '0.9375rem',
+  fontWeight: 500,
+  fontFamily: 'inherit',
+  textAlign: 'left',
+  textDecoration: 'none',
+  cursor: 'pointer',
+  '&:hover': { color: '#FFFFFF', textDecoration: 'underline', textUnderlineOffset: '3px' },
+  '&:focus-visible': { outline: '2px solid #FFFFFF !important', outlineOffset: '2px', borderRadius: '4px' },
+};
 
+function TituloColuna({ children, id }) {
+  return (
+    <Typography
+      id={id}
+      component="h2"
+      sx={{ color: ESCURO.titulo, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.8125rem', mb: 1.25 }}
+    >
+      {children}
+    </Typography>
+  );
+}
+
+function LinkExterno({ href, children }) {
+  return (
+    <Link href={href} target="_blank" rel="noopener noreferrer" sx={estiloLink}>
+      {children}
+      <OpenInNewRoundedIcon aria-hidden sx={{ fontSize: 16 }} />
+      <Box component="span" sx={visuallyHidden}>(abre em nova aba)</Box>
+    </Link>
+  );
+}
+
+export default function Rodape() {
+  const [modal, setModal] = useState(null); // 'sobre' | 'metodologia' | 'acessibilidade' | null
+  const fechar = () => setModal(null);
   const anoAtual = new Date().getFullYear();
 
-  const linkSx = {
-    color: DARK.link,
-    fontSize: '0.8125rem',
-    fontWeight: 500,
-    cursor: 'pointer',
-    transition: 'color 0.2s ease',
-    textDecoration: 'none',
-    '&:hover': { color: DARK.linkHover },
-  };
+  const acoes = [
+    { id: 'sobre', rotulo: 'Sobre o projeto' },
+    { id: 'metodologia', rotulo: 'Metodologia' },
+    { id: 'acessibilidade', rotulo: 'Acessibilidade' },
+  ];
 
   return (
     <>
-      <Box
-        component="footer"
-        sx={{ bgcolor: DARK.bg, mt: 'auto' }}
-      >
-        {/* ── Corpo principal ────────────────────────────────────────────── */}
+      <Box component="footer" sx={{ bgcolor: ESCURO.fundo, mt: { xs: 4, sm: 6 } }}>
         <Container maxWidth="lg">
-          <Stack
-            direction={{ xs: 'column', md: 'row' }}
-            spacing={{ xs: 4, md: 0 }}
-            justifyContent="space-between"
-            alignItems={{ xs: 'flex-start', md: 'flex-start' }}
-            sx={{ py: { xs: 4, md: 4.5 } }}
+          <Box
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: {
+                xs: 'minmax(0, 1fr)',
+                sm: 'repeat(2, minmax(0, 1fr))',
+                md: 'minmax(0, 1.3fr) minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 1fr)',
+              },
+              gap: { xs: 4, md: 5 },
+              py: { xs: 5, md: 6 },
+            }}
           >
-            {/* ── Coluna 1: Marca + missão ──────────────────────────────── */}
-            <Stack spacing={1.5} sx={{ maxWidth: { md: 260 } }}>
-              {/* Logo inline */}
-              <Stack direction="row" alignItems="center" spacing={1.25}>
+            {/* ── Marca + missão ─────────────────────────────────────────── */}
+            <Box>
+              <Stack direction="row" alignItems="center" spacing={1.25} sx={{ mb: 1.5 }}>
                 <Box
+                  aria-hidden
                   sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: 32,
-                    height: 32,
-                    borderRadius: '9px',
-                    background:
-                      'linear-gradient(135deg, #c41230 0%, #a20000 55%, #7a0000 100%)',
+                    display: 'grid',
+                    placeItems: 'center',
+                    width: 36,
+                    height: 36,
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #c41230 0%, #a20000 55%, #7a0000 100%)',
                     color: '#fff',
                     flexShrink: 0,
-                    boxShadow: '0 2px 6px rgba(162,0,0,0.35)',
                   }}
                 >
-                  <AccountBalanceRoundedIcon sx={{ fontSize: 16 }} />
+                  <AccountBalanceRoundedIcon sx={{ fontSize: 20 }} />
                 </Box>
-                <Typography
-                  sx={{
-                    fontWeight: 700,
-                    fontSize: '1rem',
-                    color: DARK.textPrimary,
-                    letterSpacing: '-0.02em',
-                  }}
-                >
+                <Typography sx={{ fontWeight: 700, fontSize: '1.125rem', color: ESCURO.texto, letterSpacing: '-0.02em' }}>
                   GovTrace
                 </Typography>
               </Stack>
-
-              <Typography
-                variant="caption"
-                sx={{ color: DARK.textSecondary, lineHeight: 1.6 }}
-              >
-                Monitoramento Preventivo para Licitações Públicas
+              <Typography sx={{ color: ESCURO.textoSuave, fontSize: '0.9375rem', lineHeight: 1.6 }}>
+                Transparência pública para todos: auditoria cidadã das despesas municipais de
+                São Paulo, com código aberto.
               </Typography>
-            </Stack>
+            </Box>
 
-            {/* ── Coluna 2: Autoria acadêmica ────────────────────────────── */}
-            <Stack spacing={0.75} sx={{ maxWidth: { md: 260 } }}>
-              <Typography
-                variant="caption"
-                sx={{
-                  color: DARK.accent,
-                  fontWeight: 700,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.07em',
-                  fontSize: '0.65rem',
-                  mb: 0.5,
-                }}
-              >
-                Projeto Acadêmico
-              </Typography>
-              <Typography sx={{ color: DARK.textPrimary, fontSize: '0.8125rem', fontWeight: 600 }}>
+            {/* ── Autoria acadêmica ──────────────────────────────────────── */}
+            <Box component="section" aria-labelledby="rodape-projeto">
+              <TituloColuna id="rodape-projeto">Projeto acadêmico</TituloColuna>
+              <Typography sx={{ color: ESCURO.texto, fontSize: '0.9375rem', fontWeight: 600 }}>
                 FATEC Bragança Paulista
               </Typography>
-              <Typography sx={{ color: DARK.textSecondary, fontSize: '0.75rem' }}>
+              <Typography sx={{ color: ESCURO.textoSuave, fontSize: '0.875rem', mb: 1.25 }}>
                 Gestão da Tecnologia da Informação
               </Typography>
-              <Typography sx={{ color: DARK.textSecondary, fontSize: '0.75rem', mt: 0.5 }}>
-                Enzo Corcetti · Lucas Policene · Pedro Stein
+              <Typography sx={{ color: ESCURO.textoSuave, fontSize: '0.875rem', lineHeight: 1.7 }}>
+                Equipe: Pedro Stein, Enzo Corcetti e Lucas Policene
               </Typography>
-              <Typography sx={{ color: DARK.textSecondary, fontSize: '0.75rem' }}>
+              <Typography sx={{ color: ESCURO.textoSuave, fontSize: '0.875rem', lineHeight: 1.7 }}>
                 Orientador: Prof. Clyton José da Rosa
-
               </Typography>
-            </Stack>
+            </Box>
 
-            {/* ── Coluna 3: Links + fonte ────────────────────────────────── */}
-            <Stack spacing={2} sx={{ maxWidth: { md: 200 } }}>
-              {/* Links de navegação */}
-              <Stack spacing={0.75}>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: DARK.accent,
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.07em',
-                    fontSize: '0.65rem',
-                    mb: 0.25,
-                  }}
-                >
-                  Links
-                </Typography>
-                {[
-                  { rotulo: 'Sobre', acao: () => setModalSobreAberto(true) },
-                  { rotulo: 'Metodologia', acao: () => setModalAberto(true) },
-                  {
-                    rotulo: 'Fontes (TCE-SP)',
-                    href: 'https://transparencia.tce.sp.gov.br/',
-                    externo: true,
-                  },
-                  { rotulo: 'Acessibilidade', href: '#' },
-                ].map((item) => (
-                  <Link
-                    key={item.rotulo}
-                    href={item.href ?? '#'}
-                    target={item.externo ? '_blank' : undefined}
-                    rel={item.externo ? 'noopener noreferrer' : undefined}
-                    onClick={item.acao}
-                    underline="none"
-                    sx={linkSx}
-                  >
-                    {item.rotulo}
-                  </Link>
+            {/* ── Navegação (modais) ─────────────────────────────────────── */}
+            <Box component="nav" aria-labelledby="rodape-navegacao">
+              <TituloColuna id="rodape-navegacao">Institucional</TituloColuna>
+              <Stack component="ul" spacing={0.5} sx={{ m: 0, p: 0, listStyle: 'none' }}>
+                {acoes.map((acao) => (
+                  <li key={acao.id}>
+                    <Link component="button" type="button" onClick={() => setModal(acao.id)} sx={estiloLink}>
+                      {acao.rotulo}
+                    </Link>
+                  </li>
                 ))}
               </Stack>
+            </Box>
 
-              {/* Fonte de dados */}
-              <Box>
-                <Typography
-                  variant="caption"
-                  sx={{
-                    color: DARK.accent,
-                    fontWeight: 700,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.07em',
-                    fontSize: '0.65rem',
-                    display: 'block',
-                    mb: 0.5,
-                  }}
-                >
-                  Dados Públicos
-                </Typography>
-                <Typography sx={{ color: DARK.textSecondary, fontSize: '0.75rem', lineHeight: 1.5 }}>
-                  Tribunal de Contas do Estado de São Paulo — TCE-SP
-                </Typography>
-              </Box>
-            </Stack>
-          </Stack>
+            {/* ── Fontes e código ────────────────────────────────────────── */}
+            <Box component="section" aria-labelledby="rodape-fontes">
+              <TituloColuna id="rodape-fontes">Dados e código</TituloColuna>
+              <Stack component="ul" spacing={0.5} sx={{ m: 0, p: 0, listStyle: 'none' }}>
+                <li><LinkExterno href="https://transparencia.tce.sp.gov.br/">Portal do TCE-SP</LinkExterno></li>
+                <li><LinkExterno href="https://github.com/Pedro6Stein/GovTrace">Código do site</LinkExterno></li>
+                <li><LinkExterno href="https://github.com/Pedro6Stein/Govtrace-Api">Código da API</LinkExterno></li>
+              </Stack>
+            </Box>
+          </Box>
         </Container>
 
         {/* ── Barra de copyright ────────────────────────────────────────── */}
-        <Box sx={{ bgcolor: DARK.bgBar }}>
+        <Box sx={{ bgcolor: ESCURO.fundoBarra, borderTop: `1px solid ${ESCURO.borda}` }}>
           <Container maxWidth="lg">
             <Stack
               direction={{ xs: 'column', sm: 'row' }}
               justifyContent="space-between"
-              alignItems={{ xs: 'flex-start', sm: 'center' }}
-              sx={{ py: 1.75 }}
               spacing={0.5}
+              sx={{ py: 2 }}
             >
-              <Typography
-                variant="caption"
-                sx={{ color: DARK.textSecondary, fontSize: '0.7rem' }}
-              >
-                © {anoAtual} GovTrace · Projeto acadêmico — FATEC Bragança Paulista
+              <Typography sx={{ color: ESCURO.textoSuave, fontSize: '0.8125rem' }}>
+                © {anoAtual} GovTrace · Projeto acadêmico de código aberto (licença MIT)
               </Typography>
-              <Typography
-                variant="caption"
-                sx={{ color: '#4A5E75', fontSize: '0.7rem' }}
-              >
-                Dados públicos: TCE-SP
+              <Typography sx={{ color: ESCURO.textoSuave, fontSize: '0.8125rem' }}>
+                Fonte dos dados: Tribunal de Contas do Estado de São Paulo
               </Typography>
             </Stack>
           </Container>
         </Box>
       </Box>
 
-      {/* Modal de metodologia disparado pelo link do rodapé */}
-      <ModalMetodologia
-        aberto={modalAberto}
-        aoFechar={() => setModalAberto(false)}
-      />
-
-      {/* Modal institucional Sobre disparado pelo link do rodapé */}
-      <ModalSobre
-        aberto={modalSobreAberto}
-        aoFechar={() => setModalSobreAberto(false)}
-      />
+      <ModalSobre aberto={modal === 'sobre'} aoFechar={fechar} />
+      <ModalMetodologia aberto={modal === 'metodologia'} aoFechar={fechar} />
+      <ModalAcessibilidade aberto={modal === 'acessibilidade'} aoFechar={fechar} />
     </>
   );
 }

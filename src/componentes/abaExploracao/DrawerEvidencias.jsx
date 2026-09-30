@@ -271,7 +271,6 @@ export default function DrawerEvidencias({ aberto, aoFechar, fornecedor, despesa
                         variant="caption"
                         fontWeight={600}
                         sx={{
-                          fontFamily: '"Roboto Mono", monospace',
                           fontVariantNumeric: 'tabular-nums',
                           color: linha.valor < 0 ? 'error.main' : 'text.primary',
                         }}

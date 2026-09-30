@@ -152,7 +152,6 @@ function MetricaHeroi({ valor, legenda, alerta }) {
       <Typography
         component="p"
         sx={{
-          fontFamily: '"Roboto Mono", monospace',
           fontVariantNumeric: 'tabular-nums',
           fontWeight: 700,
           fontSize: { xs: '1.75rem', sm: '2.25rem' },
@@ -214,7 +213,7 @@ function DetalheZScore({ outliers }) {
               </Typography>
               <Typography variant="caption" color="text.secondary">{o.orgao}</Typography>
             </Box>
-            <Typography sx={{ fontFamily: '"Roboto Mono", monospace', fontVariantNumeric: 'tabular-nums', fontWeight: 700, fontSize: '0.8125rem', ml: { xs: 0, sm: 2 }, flexShrink: 0 }}>
+            <Typography sx={{ fontVariantNumeric: 'tabular-nums', fontWeight: 700, fontSize: '0.8125rem', ml: { xs: 0, sm: 2 }, flexShrink: 0 }}>
               {fmtCompacto(o.valor)}
             </Typography>
           </Stack>
@@ -243,7 +242,7 @@ function DetalheBenford({ digitoSuspeito }) {
           const destaque = digito === digitoSuspeito;
           return (
             <Stack key={digito} direction="row" alignItems="center" spacing={1.5}>
-              <Typography sx={{ fontFamily: '"Roboto Mono", monospace', fontWeight: destaque ? 700 : 400, fontSize: '0.8125rem', color: destaque ? '#7C3AED' : 'text.secondary', width: 14, flexShrink: 0 }}>
+              <Typography sx={{ fontVariantNumeric: 'tabular-nums', fontWeight: destaque ? 700 : 400, fontSize: '0.8125rem', color: destaque ? '#7C3AED' : 'text.secondary', width: 14, flexShrink: 0 }}>
                 {digito}
               </Typography>
               <Box sx={{ flex: 1, height: 8, bgcolor: '#F1F3F4', borderRadius: '4px', overflow: 'hidden' }}>
@@ -255,7 +254,7 @@ function DetalheBenford({ digitoSuspeito }) {
                   opacity: destaque ? 1 : 0.6,
                 }} />
               </Box>
-              <Typography variant="caption" color={destaque ? '#7C3AED' : 'text.disabled'} sx={{ fontFamily: '"Roboto Mono", monospace', width: 38, textAlign: 'right', fontWeight: destaque ? 700 : 400, flexShrink: 0 }}>
+              <Typography variant="caption" color={destaque ? '#7C3AED' : 'text.disabled'} sx={{ fontVariantNumeric: 'tabular-nums', width: 38, textAlign: 'right', fontWeight: destaque ? 700 : 400, flexShrink: 0 }}>
                 {esperado}%
               </Typography>
             </Stack>
@@ -363,7 +362,7 @@ function DetalheConcentracao({ dados }) {
                 {f.nome}
               </Typography>
             </Box>
-            <Typography sx={{ fontFamily: '"Roboto Mono", monospace', fontVariantNumeric: 'tabular-nums', fontWeight: 700, fontSize: '0.8125rem', flexShrink: 0 }}>
+            <Typography sx={{ fontVariantNumeric: 'tabular-nums', fontWeight: 700, fontSize: '0.8125rem', flexShrink: 0 }}>
               {fmtCompacto(f.valorTotal)}
             </Typography>
           </Stack>

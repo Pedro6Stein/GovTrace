@@ -28,7 +28,7 @@ export default function ExplicacaoCidada({ rotulo = 'Entenda este dado', childre
         onClick={() => setAberto((v) => !v)}
         aria-expanded={aberto}
         aria-controls={idConteudo}
-        startIcon={<HelpOutlineRoundedIcon sx={{ fontSize: '1rem !important' }} />}
+        startIcon={<HelpOutlineRoundedIcon sx={{ fontSize: '1.125rem !important' }} />}
         endIcon={
           <ExpandMoreRoundedIcon
             sx={{
@@ -38,27 +38,29 @@ export default function ExplicacaoCidada({ rotulo = 'Entenda este dado', childre
           />
         }
         sx={{
-          minHeight: 32,
-          px: 1,
-          ml: -1,
-          fontSize: '0.75rem',
+          minHeight: 44, // Área de toque confortável (WCAG 2.5.8 pede ≥ 24px; 44px é o padrão iOS/Android)
+          px: 1.25,
+          ml: -1.25,
+          fontSize: '0.875rem',
           fontWeight: 600,
-          color: 'text.secondary',
-          '&:hover': { color: 'primary.main', bgcolor: 'transparent' },
+          color: 'primary.main',
+          '&:hover': { bgcolor: 'rgba(162, 0, 0, 0.06)' },
         }}
       >
         {aberto ? 'Ocultar explicação' : rotulo}
       </Button>
 
-      <Collapse in={aberto} timeout={280} unmountOnExit>
+      {/* Sem unmountOnExit: o alvo do aria-controls precisa existir sempre.
+          Fechado, o Collapse aplica visibility:hidden — leitores de tela ignoram. */}
+      <Collapse in={aberto} timeout={280}>
         <Box
           id={idConteudo}
           sx={{
-            mt: 1,
+            mt: 0.5,
             p: 2,
-            borderRadius: 1.5,
+            borderRadius: '12px',
             bgcolor: '#F8FAFC',
-            border: '1px dashed',
+            border: '1px solid',
             borderColor: 'divider',
           }}
         >

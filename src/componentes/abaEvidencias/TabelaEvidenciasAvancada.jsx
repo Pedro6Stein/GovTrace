@@ -275,7 +275,6 @@ export default function TabelaEvidenciasAvancada({ despesas }) {
                 </Typography>
                 <Typography
                   sx={{
-                    fontFamily: '"Roboto Mono", monospace',
                     fontVariantNumeric: 'tabular-nums',
                     fontWeight: 700,
                     fontSize: '1rem',
@@ -537,7 +536,7 @@ export default function TabelaEvidenciasAvancada({ despesas }) {
                           fontWeight={600}
                           sx={{
                             fontSize: '0.8125rem',
-                            fontFamily: '"Roboto Mono", monospace',
+                            fontVariantNumeric: 'tabular-nums',
                             color: 'text.primary',
                           }}
                         >
@@ -589,7 +588,6 @@ export default function TabelaEvidenciasAvancada({ despesas }) {
                         <Typography
                           variant="body2"
                           sx={{
-                            fontFamily: '"Roboto Mono", monospace',
                             fontVariantNumeric: 'tabular-nums',
                             fontWeight: 700,
                             fontSize: '0.875rem',
