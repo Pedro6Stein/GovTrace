@@ -16,6 +16,35 @@ import { formatarPeriodo } from '../../utilitarios/formatadores';
  * BadgeStatus, exportados de CardAlerta.jsx) para nunca divergir do que o
  * usuário já viu na tela.
  *
+ * BUG CORRIGIDO: `-webkit-line-clamp` (usado na v1) é um truque de truncagem
+ * específico de engine — em alguns navegadores mobile, html-to-image
+ * (que serializa o DOM num <foreignObject> de SVG e rasteriza via canvas)
+ * simplesmente não o respeita. O texto inteiro acaba renderizando, estoura a
+ * altura fixa de 1080px e o canvas corta no meio da frase, sem reticências.
+ * A correção tem duas camadas, nenhuma delas dependente de engine:
+ *   1. O bloco de texto variável (explicação) vira um item flex com
+ *      `flex: 1, minHeight: 0, overflow: 'hidden'` — comportamento de caixa
+ *      básico, suportado identicamente por qualquer motor de renderização,
+ *      garante que ele nunca empurra o rodapé pra fora do cartão.
+ *   2. O texto é truncado em JS (truncarTexto) ANTES de renderizar, com
+ *      reticências num ponto de palavra — resultado idêntico em qualquer
+ *      aparelho, não depende de como aquele navegador calcula "3 linhas".
+ */
+
+// Orçamento de caracteres calibrado para a largura útil do cartão (952px,
+// fonte 20px) folgado o bastante pra caber ~3 linhas mesmo com fontes de
+// fallback um pouco mais largas — é só um teto de segurança, não o
+// mecanismo principal de corte (esse é o container flex abaixo).
+const ORCAMENTO_EXPLICACAO = 260;
+
+const truncarTexto = (texto, maxCaracteres) => {
+  if (!texto || texto.length <= maxCaracteres) return texto;
+  const cortado = texto.slice(0, maxCaracteres);
+  const ultimoEspaco = cortado.lastIndexOf(' ');
+  return (ultimoEspaco > 40 ? cortado.slice(0, ultimoEspaco) : cortado).trimEnd() + '…';
+};
+
+/**
  * Props:
  *   tipo      'zScore' | 'benford' | 'fracionamento' | 'monopolio' | 'concentracao'
  *   dados     objeto retornado pelo motor correspondente
@@ -30,6 +59,7 @@ export default function CartaoCompartilhavel({ tipo, dados, municipio, ano, mes 
   const { rotulo, tituloNormal, Icone, corIcone, fundoIcone } = cfg;
   const tituloExibido = alerta ? titulo : tituloNormal;
   const metrica = extrairMetrica(tipo, dados);
+  const explicacao = truncarTexto(insightEducativo, ORCAMENTO_EXPLICACAO);
 
   return (
     <Box
@@ -40,11 +70,12 @@ export default function CartaoCompartilhavel({ tipo, dados, municipio, ano, mes 
         p: '64px',
         display: 'flex',
         flexDirection: 'column',
-        fontFamily: '"Inter Variable", Inter, sans-serif',
+        overflow: 'hidden', // nunca deixa NADA vazar do quadro de 1080×1080
+        fontFamily: '"Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',
       }}
     >
       {/* ── Marca ──────────────────────────────────────────────────────── */}
-      <Box>
+      <Box sx={{ flexShrink: 0 }}>
         <Typography sx={{ fontSize: '34px', fontWeight: 800, color: '#a20000', letterSpacing: '-0.01em', lineHeight: 1 }}>
           GovTrace
         </Typography>
@@ -53,13 +84,24 @@ export default function CartaoCompartilhavel({ tipo, dados, municipio, ano, mes 
         </Typography>
       </Box>
 
-      {/* ── Município e período ───────────────────────────────────────── */}
-      <Typography sx={{ fontSize: '24px', fontWeight: 600, color: 'text.primary', mt: '40px' }}>
+      {/* ── Município e período (sempre 1 linha, mesmo com nome longo) ──── */}
+      <Typography
+        sx={{
+          fontSize: '24px',
+          fontWeight: 600,
+          color: 'text.primary',
+          mt: '40px',
+          flexShrink: 0,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+        }}
+      >
         {municipio} · {formatarPeriodo(mes, ano)}
       </Typography>
 
       {/* ── Motor + status ────────────────────────────────────────────── */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: '16px', mt: '32px' }}>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: '16px', mt: '32px', flexShrink: 0 }}>
         <Box
           sx={{
             width: 72,
@@ -86,14 +128,28 @@ export default function CartaoCompartilhavel({ tipo, dados, municipio, ano, mes 
         </Box>
       </Box>
 
-      {/* ── Título do resultado ───────────────────────────────────────── */}
-      <Typography sx={{ fontSize: '30px', fontWeight: 700, color: 'text.primary', lineHeight: 1.25, mt: '28px' }}>
+      {/* ── Título do resultado (até 2 linhas; o container cuida do resto) */}
+      <Typography
+        sx={{
+          fontSize: '30px',
+          fontWeight: 700,
+          color: 'text.primary',
+          lineHeight: 1.25,
+          mt: '28px',
+          flexShrink: 0,
+          display: '-webkit-box',
+          WebkitBoxOrient: 'vertical',
+          WebkitLineClamp: 2,
+          overflow: 'hidden',
+          maxHeight: '76px', // 2 × 30px × 1.25 — teto real, não depende do clamp funcionar
+        }}
+      >
         {tituloExibido}
       </Typography>
 
       {/* ── Número-herói ──────────────────────────────────────────────── */}
       {metrica && (
-        <Box sx={{ mt: '32px' }}>
+        <Box sx={{ mt: '32px', flexShrink: 0 }}>
           <Typography
             sx={{
               fontVariantNumeric: 'tabular-nums',
@@ -112,26 +168,20 @@ export default function CartaoCompartilhavel({ tipo, dados, municipio, ano, mes 
         </Box>
       )}
 
-      {/* ── Explicação cidadã, truncada ───────────────────────────────── */}
-      {insightEducativo && (
-        <Typography
-          sx={{
-            fontSize: '20px',
-            color: 'text.secondary',
-            lineHeight: 1.55,
-            mt: '32px',
-            display: '-webkit-box',
-            WebkitBoxOrient: 'vertical',
-            WebkitLineClamp: 3,
-            overflow: 'hidden',
-          }}
-        >
-          {insightEducativo}
-        </Typography>
+      {/* ── Explicação cidadã ──────────────────────────────────────────
+          flex:1 + minHeight:0 + overflow:hidden = o espaço que sobrar até
+          o rodapé, nunca mais — comportamento de caixa padrão, garantido
+          em qualquer motor de renderização (ao contrário do line-clamp). */}
+      {explicacao && (
+        <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden', mt: '32px' }}>
+          <Typography sx={{ fontSize: '20px', color: 'text.secondary', lineHeight: 1.55 }}>
+            {explicacao}
+          </Typography>
+        </Box>
       )}
 
       {/* ── Rodapé ─────────────────────────────────────────────────────── */}
-      <Box sx={{ mt: 'auto', pt: '32px', borderTop: '1px solid #E2E8F0' }}>
+      <Box sx={{ flexShrink: 0, mt: '32px', pt: '32px', borderTop: '1px solid #E2E8F0' }}>
         <Typography sx={{ fontSize: '17px', color: 'text.disabled' }}>
           Dados oficiais do TCE-SP · processados pelo GovTrace · gov-trace.vercel.app
         </Typography>
