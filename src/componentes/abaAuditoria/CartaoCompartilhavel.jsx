@@ -16,42 +16,25 @@ import { formatarPeriodo } from '../../utilitarios/formatadores';
  * BadgeStatus, exportados de CardAlerta.jsx) para nunca divergir do que o
  * usuário já viu na tela.
  *
- * BUG CORRIGIDO: `-webkit-line-clamp` (usado na v1) é um truque de truncagem
- * específico de engine — em alguns navegadores mobile, html-to-image
- * (que serializa o DOM num <foreignObject> de SVG e rasteriza via canvas)
- * simplesmente não o respeita. O texto inteiro acaba renderizando, estoura a
- * altura fixa de 1080px e o canvas corta no meio da frase, sem reticências.
- * A correção tem duas camadas, nenhuma delas dependente de engine:
- *   1. O bloco de texto variável (explicação) vira um item flex com
- *      `flex: 1, minHeight: 0, overflow: 'hidden'` — comportamento de caixa
- *      básico, suportado identicamente por qualquer motor de renderização,
- *      garante que ele nunca empurra o rodapé pra fora do cartão.
- *   2. O texto é truncado em JS (truncarTexto) ANTES de renderizar, com
- *      reticências num ponto de palavra — resultado idêntico em qualquer
- *      aparelho, não depende de como aquele navegador calcula "3 linhas".
+ * A explicação cidadã (`insightEducativo`) nunca é cortada — o texto
+ * completo sempre aparece. Quem controla isso é DialogoCompartilhar: ele
+ * mede a altura real do texto renderizado (fora da tela) contra o espaço
+ * disponível e, se não couber, reduz `fonteExplicacao` e mede de novo, até
+ * caber inteiro. Por isso o tamanho da fonte da explicação vem de fora
+ * (prop), não é fixo aqui — e os nós usados na medição têm `data-papel`
+ * estável pra DialogoCompartilhar encontrá-los.
  */
-
-// Orçamento de caracteres calibrado para a largura útil do cartão (952px,
-// fonte 20px) folgado o bastante pra caber ~3 linhas mesmo com fontes de
-// fallback um pouco mais largas — é só um teto de segurança, não o
-// mecanismo principal de corte (esse é o container flex abaixo).
-const ORCAMENTO_EXPLICACAO = 260;
-
-const truncarTexto = (texto, maxCaracteres) => {
-  if (!texto || texto.length <= maxCaracteres) return texto;
-  const cortado = texto.slice(0, maxCaracteres);
-  const ultimoEspaco = cortado.lastIndexOf(' ');
-  return (ultimoEspaco > 40 ? cortado.slice(0, ultimoEspaco) : cortado).trimEnd() + '…';
-};
 
 /**
  * Props:
- *   tipo      'zScore' | 'benford' | 'fracionamento' | 'monopolio' | 'concentracao'
- *   dados     objeto retornado pelo motor correspondente
- *   municipio string
- *   ano, mes  number
+ *   tipo              'zScore' | 'benford' | 'fracionamento' | 'monopolio' | 'concentracao'
+ *   dados             objeto retornado pelo motor correspondente
+ *   municipio         string
+ *   ano, mes          number
+ *   fonteExplicacao   number (px) — tamanho da fonte da explicação, ajustado
+ *                     por fora até o texto inteiro caber (default 20)
  */
-export default function CartaoCompartilhavel({ tipo, dados, municipio, ano, mes }) {
+export default function CartaoCompartilhavel({ tipo, dados, municipio, ano, mes, fonteExplicacao = 20 }) {
   const cfg = MOTOR_CONFIG[tipo];
   if (!dados || !cfg) return null;
 
@@ -59,7 +42,6 @@ export default function CartaoCompartilhavel({ tipo, dados, municipio, ano, mes 
   const { rotulo, tituloNormal, Icone, corIcone, fundoIcone } = cfg;
   const tituloExibido = alerta ? titulo : tituloNormal;
   const metrica = extrairMetrica(tipo, dados);
-  const explicacao = truncarTexto(insightEducativo, ORCAMENTO_EXPLICACAO);
 
   return (
     <Box
@@ -168,14 +150,14 @@ export default function CartaoCompartilhavel({ tipo, dados, municipio, ano, mes 
         </Box>
       )}
 
-      {/* ── Explicação cidadã ──────────────────────────────────────────
-          flex:1 + minHeight:0 + overflow:hidden = o espaço que sobrar até
-          o rodapé, nunca mais — comportamento de caixa padrão, garantido
-          em qualquer motor de renderização (ao contrário do line-clamp). */}
-      {explicacao && (
-        <Box sx={{ flex: 1, minHeight: 0, overflow: 'hidden', mt: '32px' }}>
-          <Typography sx={{ fontSize: '20px', color: 'text.secondary', lineHeight: 1.55 }}>
-            {explicacao}
+      {/* ── Explicação cidadã (texto completo, fonte ajustada por fora) ── */}
+      {insightEducativo && (
+        <Box data-papel="explicacao-container" sx={{ flex: 1, minHeight: 0, overflow: 'hidden', mt: '32px' }}>
+          <Typography
+            data-papel="explicacao"
+            sx={{ fontSize: `${fonteExplicacao}px`, color: 'text.secondary', lineHeight: 1.55 }}
+          >
+            {insightEducativo}
           </Typography>
         </Box>
       )}

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import {
   Box,
   Button,
@@ -34,6 +35,12 @@ const esperarFontesProntas = () =>
     document.fonts.ready.then(() => { clearTimeout(seguranca); resolve(); });
   });
 
+// Nunca corta a explicação: em vez de truncar o texto, reduz a fonte dela
+// até o texto inteiro caber no espaço reservado do cartão (ver medição
+// abaixo, em ajustarFonteExplicacao).
+const FONTE_EXPLICACAO_MAXIMA = 20;
+const FONTE_EXPLICACAO_MINIMA = 12;
+
 const slugMunicipio = (nome) =>
   (nome || 'municipio')
     .normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -61,11 +68,26 @@ export default function DialogoCompartilhar({ aberto, aoFechar, tipo, dados, fil
   const [blob, setBlob] = useState(null);
   const [urlImagem, setUrlImagem] = useState(null);
   const [podeCompartilharArquivo, setPodeCompartilharArquivo] = useState(false);
+  const [fonteExplicacao, setFonteExplicacao] = useState(FONTE_EXPLICACAO_MAXIMA);
+
+  // Mede a altura real do texto (fora da tela) contra o espaço reservado e
+  // vai reduzindo a fonte até caber por inteiro — nunca corta a frase.
+  const ajustarFonteExplicacao = async () => {
+    for (let tamanho = FONTE_EXPLICACAO_MAXIMA; tamanho >= FONTE_EXPLICACAO_MINIMA; tamanho--) {
+      flushSync(() => setFonteExplicacao(tamanho));
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      const container = referenciaCartao.current?.querySelector('[data-papel="explicacao-container"]');
+      const texto = referenciaCartao.current?.querySelector('[data-papel="explicacao"]');
+      if (!container || !texto) return; // sem explicação neste motor — nada a ajustar
+      if (texto.scrollHeight <= container.clientHeight + 1) return; // já coube inteiro
+    }
+  };
 
   const gerarImagem = async () => {
     setEstado('gerando');
     try {
       await esperarFontesProntas();
+      await ajustarFonteExplicacao(); // começa do maior tamanho a cada tentativa
       const novoBlob = await toBlob(referenciaCartao.current, {
         width: 1080,
         height: 1080,
@@ -89,6 +111,7 @@ export default function DialogoCompartilhar({ aberto, aoFechar, tipo, dados, fil
   useEffect(() => {
     if (!aberto) return;
     gerarImagem();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- só deve rodar na abertura do diálogo
   }, [aberto]);
 
   // Libera a memória do blob anterior sempre que uma nova URL é criada ou o
@@ -138,6 +161,7 @@ export default function DialogoCompartilhar({ aberto, aoFechar, tipo, dados, fil
               municipio={filtros?.municipio}
               ano={filtros?.ano}
               mes={filtros?.mes}
+              fonteExplicacao={fonteExplicacao}
             />
           </Box>
         </Box>
@@ -166,7 +190,7 @@ export default function DialogoCompartilhar({ aberto, aoFechar, tipo, dados, fil
         )}
       </DialogContent>
 
-      <DialogActions sx={{ p: 2, gap: 1 }}>
+      <DialogActions sx={{ p: 2, gap: 1, flexDirection: { xs: 'column', sm: 'row' } }}>
         <Button
           component="a"
           href={urlImagem || undefined}
@@ -174,6 +198,7 @@ export default function DialogoCompartilhar({ aberto, aoFechar, tipo, dados, fil
           disabled={estado !== 'pronto'}
           startIcon={<DownloadRoundedIcon />}
           variant="outlined"
+          fullWidth={telaCheia}
         >
           Baixar imagem
         </Button>
@@ -183,6 +208,7 @@ export default function DialogoCompartilhar({ aberto, aoFechar, tipo, dados, fil
             disabled={estado !== 'pronto'}
             startIcon={<IosShareRoundedIcon />}
             variant="contained"
+            fullWidth={telaCheia}
           >
             Compartilhar
           </Button>
