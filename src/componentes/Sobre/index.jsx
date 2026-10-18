@@ -340,27 +340,18 @@ export default function ModalSobre({ aberto, aoFechar }) {
 
               <Grid item xs={12} sm={6}>
                 <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ display: 'block', mb: 0.5 }}>
-                  Orientador Acadêmico:
-                </Typography>
-                <Typography variant="body2" fontWeight={600} color="text.primary">
-                  Prof. Clayton José da Rosa
-                </Typography>
-                <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 0.5, lineHeight: 1.5 }}>
-                  Orientação metodológica e estruturação analítica do projeto acadêmico.
-                </Typography>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ display: 'block', mb: 0.5 }}>
-                  Banca Examinadora:
+                  Orientadores Acadêmicos:
                 </Typography>
                 <Stack spacing={0.5}>
-                  {['Prof. Carlos Augusto Gomes', 'Profa. Viviane Ramalho de Azevedo'].map((membro) => (
-                    <Typography key={membro} variant="body2" fontWeight={600} color="text.primary">
-                      • {membro}
+                  {['Prof. Carlos Augusto Gomes', 'Profa. Viviane Ramalho de Azevedo'].map((orientador) => (
+                    <Typography key={orientador} variant="body2" fontWeight={600} color="text.primary">
+                      • {orientador}
                     </Typography>
                   ))}
                 </Stack>
+                <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mt: 1, lineHeight: 1.5 }}>
+                  Orientação metodológica e estruturação analítica do projeto acadêmico.
+                </Typography>
               </Grid>
             </Grid>
           </Box>

@@ -68,7 +68,7 @@ Queremos **crescer rápido**. Por isso estamos estruturando a base para receber 
 
 | Aba | O que mostra |
 |---|---|
-| 🏛️ **A Cidade** | Total empenhado, quantidade de registros, concentração de mercado (CR5) e distribuição dos gastos por área social |
+| 🏛️ **A Cidade** | Total empenhado, maior valor único, concentração de mercado (CR5) e distribuição dos gastos por área pública, classificada pela atividade oficial das empresas (CNAE da Receita Federal) |
 | 🔎 **Exploração** | Ranking dos fornecedores que mais receberam recursos, com drill-down nas notas de cada um |
 | 📈 **Auditoria Algorítmica** | Resultado dos 5 motores estatísticos, com a métrica principal em destaque e os registros que a sustentam |
 | 📄 **Evidências** | Tabela com todos os registros oficiais do período, com busca e filtro por estágio contábil (empenho, liquidação, pagamento, reforço, anulação) |
@@ -281,7 +281,7 @@ Tem interesse em uma **parceria institucional** (universidades, ONGs, observató
 | **Enzo Corcetti** | Desenvolvedor |
 | **Lucas Policene** | Desenvolvedor |
 
-**Orientador:** Prof. Clayton José da Rosa
+**Orientadores:** Prof. Carlos Augusto Gomes e Profa. Viviane Ramalho de Azevedo
 **Instituição:** FATEC Bragança Paulista, curso de Gestão da Tecnologia da Informação
 
 ## 📄 Licença
