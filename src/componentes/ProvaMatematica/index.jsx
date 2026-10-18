@@ -1,12 +1,26 @@
 import { Suspense, lazy, useState } from 'react';
-import { Button, CircularProgress } from '@mui/material';
+import { Button, Stack, Typography } from '@mui/material';
 
 import ScienceRoundedIcon from '@mui/icons-material/ScienceRounded';
+
+import ContornoErro from '../ContornoErro';
 
 // KaTeX (~24kB) e Framer Motion só entram no bundle de quem efetivamente
 // clica em "Ver a prova matemática" — a maioria dos visitantes nunca paga
 // esse custo. Ver justificativa no README (seção de performance).
 const DialogoProva = lazy(() => import('./DialogoProva'));
+
+// Enquanto o chunk baixa (rede mais lenta, ou o primeiro clique após o
+// deploy), um texto explícito evita que o clique pareça "não fez nada" —
+// o spinner sozinho é pequeno demais pra ser notado com segurança.
+function CarregandoProva() {
+  return (
+    <Stack direction="row" spacing={1.25} alignItems="center" sx={{ mt: 2, color: 'text.secondary' }} role="status" aria-live="polite">
+      <ScienceRoundedIcon sx={{ fontSize: 20, opacity: 0.5, animation: 'pulsar 1.4s ease-in-out infinite', '@keyframes pulsar': { '0%, 100%': { opacity: 0.3 }, '50%': { opacity: 0.8 } } }} />
+      <Typography variant="body2">Carregando a prova matemática…</Typography>
+    </Stack>
+  );
+}
 
 /**
  * BotaoProvaMatematica — abre a demonstração animada da fórmula oficial
@@ -43,9 +57,11 @@ export default function BotaoProvaMatematica({ tipo, dados }) {
       </Button>
 
       {aberto && (
-        <Suspense fallback={<CircularProgress size={20} sx={{ mt: 2 }} aria-label="Carregando a prova matemática" />}>
-          <DialogoProva tipo={tipo} dados={dados} aberto={aberto} aoFechar={() => setAberto(false)} />
-        </Suspense>
+        <ContornoErro mensagem="Não foi possível abrir a prova matemática. Verifique sua conexão.">
+          <Suspense fallback={<CarregandoProva />}>
+            <DialogoProva tipo={tipo} dados={dados} aberto={aberto} aoFechar={() => setAberto(false)} />
+          </Suspense>
+        </ContornoErro>
       )}
     </>
   );

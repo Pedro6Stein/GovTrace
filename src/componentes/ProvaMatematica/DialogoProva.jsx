@@ -36,6 +36,14 @@ const MotionDiv = motion.div;
 
 const ATRASO_ENTRE_LINHAS = 0.45; // segundos entre cada letra virar número
 
+// Tokens oficiais de easing do Material Design 3 (m3.material.io/styles/
+// motion/easing-and-duration/tokens-specs), convertidos para o array que o
+// Framer Motion espera. "Decelerate" é para o que ENTRA na tela (começa
+// rápido, pousa suave); "Accelerate" é para o que SAI (começa parado,
+// ganha velocidade — reforça que não vai voltar).
+const MD3_DECELERATE = [0.05, 0.7, 0.1, 1.0];
+const MD3_ACCELERATE = [0.3, 0.0, 0.8, 0.15];
+
 // ─── Linha "símbolo = valor", com crossfade quando revelada ─────────────────
 function LinhaVariavel({ simbolo, valorFinal, revelado, indice, semAnimacao }) {
   return (
@@ -53,7 +61,7 @@ function LinhaVariavel({ simbolo, valorFinal, revelado, indice, semAnimacao }) {
             <MotionSpan
               key="simbolo"
               exit={semAnimacao ? undefined : { opacity: 0, y: -8 }}
-              transition={{ duration: semAnimacao ? 0 : 0.25 }}
+              transition={{ duration: semAnimacao ? 0 : 0.2, ease: MD3_ACCELERATE }}
               style={{ display: 'inline-block', color: 'var(--mui-palette-text-disabled, #94A3B8)', fontStyle: 'italic' }}
             >
               valor ainda não revelado
@@ -63,7 +71,7 @@ function LinhaVariavel({ simbolo, valorFinal, revelado, indice, semAnimacao }) {
               key="valor"
               initial={semAnimacao ? false : { opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: semAnimacao ? 0 : 0.4, delay: semAnimacao ? 0 : indice * ATRASO_ENTRE_LINHAS }}
+              transition={{ duration: semAnimacao ? 0 : 0.4, delay: semAnimacao ? 0 : indice * ATRASO_ENTRE_LINHAS, ease: MD3_DECELERATE }}
               style={{ display: 'inline-block', fontWeight: 700, fontVariantNumeric: 'tabular-nums', overflowWrap: 'anywhere' }}
             >
               {valorFinal}
@@ -89,7 +97,7 @@ function BarraComparativa({ rotulo, percentual, cor, animar, atraso, semAnimacao
         <MotionDiv
           initial={semAnimacao ? false : { width: 0 }}
           animate={{ width: animar ? `${Math.min(percentual, 100)}%` : 0 }}
-          transition={{ duration: semAnimacao ? 0 : 0.8, delay: semAnimacao ? 0 : atraso, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: semAnimacao ? 0 : 0.5, delay: semAnimacao ? 0 : atraso, ease: MD3_DECELERATE }}
           style={{ height: '100%', borderRadius: '5px', background: cor }}
         />
       </Box>
@@ -135,14 +143,14 @@ function ConteudoZScore({ dados, revelado, semAnimacao }) {
           <MotionDiv
             initial={semAnimacao ? false : { opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
-            transition={{ delay: semAnimacao ? 0 : 3 * ATRASO_ENTRE_LINHAS + 0.2, duration: semAnimacao ? 0 : 0.4 }}
+            transition={{ delay: semAnimacao ? 0 : 3 * ATRASO_ENTRE_LINHAS + 0.2, duration: semAnimacao ? 0 : 0.4, ease: MD3_DECELERATE }}
           >
             <Box sx={{ mt: 2.5, pt: 2, borderTop: '1px dashed', borderColor: 'divider' }}>
-              <Typography sx={{ fontFamily: 'ui-monospace, monospace', fontSize: '1rem', color: 'text.secondary' }}>
+              <Typography sx={{ fontFamily: 'ui-monospace, monospace', fontSize: 'clamp(0.8125rem, 3.5vw, 1rem)', color: 'text.secondary', overflowWrap: 'break-word' }}>
                 Z = ({formatarMoeda(valorExemplo)} − {formatarMoeda(estatisticas.media)}) ÷ {formatarMoeda(estatisticas.desvioPadrao)}
               </Typography>
-              <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 1 }}>
-                <Typography sx={{ fontSize: '2rem', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: passouDoLimite ? '#B45309' : '#15803D' }}>
+              <Stack direction="row" spacing={1.5} alignItems="center" useFlexGap flexWrap="wrap" sx={{ mt: 1 }}>
+                <Typography sx={{ fontSize: 'clamp(1.375rem, 6vw, 2rem)', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: passouDoLimite ? '#B45309' : '#15803D' }}>
                   Z = {zCalculado.toFixed(2).replace('.', ',')}
                 </Typography>
                 <Chip
@@ -216,7 +224,7 @@ function ConteudoBenford({ dados, revelado, semAnimacao }) {
           <MotionDiv
             initial={semAnimacao ? false : { opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
-            transition={{ delay: semAnimacao ? 0 : 2 * ATRASO_ENTRE_LINHAS + 0.2, duration: semAnimacao ? 0 : 0.4 }}
+            transition={{ delay: semAnimacao ? 0 : 2 * ATRASO_ENTRE_LINHAS + 0.2, duration: semAnimacao ? 0 : 0.4, ease: MD3_DECELERATE }}
           >
             <Box sx={{ mt: 2.5, pt: 2, borderTop: '1px dashed', borderColor: 'divider' }}>
               <Typography variant="caption" color="text.disabled" sx={{ display: 'block', mb: 1.5 }}>

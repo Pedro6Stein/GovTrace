@@ -152,7 +152,8 @@ function LinhaCategoria({ item, animado }) {
                 minWidth: largura > 0 ? 4 : 0,
                 borderRadius: '5px',
                 bgcolor: cor,
-                transition: 'width 0.9s cubic-bezier(0.22, 1, 0.36, 1)',
+                // Token oficial MD3 "emphasized decelerate" (m3.material.io/styles/motion/easing-and-duration/tokens-specs)
+                transition: 'width 0.5s cubic-bezier(0.05, 0.7, 0.1, 1.0)',
               }}
             />
           </Box>
