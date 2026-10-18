@@ -137,11 +137,8 @@ export default function Rodape() {
                 Equipe: Pedro Stein, Enzo Corcetti e Lucas Policene
               </Typography>
               <Typography sx={{ color: ESCURO.textoSuave, fontSize: '0.875rem', lineHeight: 1.7 }}>
-                Orientador: Prof.&nbsp;Clayton José da Rosa
-              </Typography>
-              <Typography sx={{ color: ESCURO.textoSuave, fontSize: '0.875rem', lineHeight: 1.7 }}>
                 {/* &nbsp; mantém o título junto do nome na quebra de linha */}
-                Banca: Prof.&nbsp;Carlos Augusto Gomes e Profa.&nbsp;Viviane Ramalho de Azevedo
+                Orientadores: Prof.&nbsp;Carlos Augusto Gomes e Profa.&nbsp;Viviane Ramalho de Azevedo
               </Typography>
             </Box>
 
