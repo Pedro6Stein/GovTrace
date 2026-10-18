@@ -20,6 +20,7 @@ import CardAlerta from './CardAlerta';
  *
  * Props:
  *   insights   { zScore, benford, fracionamento, monopolio, concentracao }
+ *   filtros    { municipio, ano, mes } — repassado para o card compartilhável
  */
 
 // Contagem de alertas ativos
@@ -28,7 +29,7 @@ function contarAlertas(insights) {
   return Object.values(insights).filter((m) => m?.alerta).length;
 }
 
-export default function PainelAuditoria({ insights }) {
+export default function PainelAuditoria({ insights, filtros }) {
   if (!insights) return null;
 
   const totalAlertas = contarAlertas(insights);
@@ -110,11 +111,11 @@ export default function PainelAuditoria({ insights }) {
 
       {/* ── Cards de motores ─────────────────────────────────────────── */}
       <Stack spacing={2}>
-        <CardAlerta tipo="zScore"          dados={insights.zScore} />
-        <CardAlerta tipo="fracionamento"   dados={insights.fracionamento} />
-        <CardAlerta tipo="monopolio"       dados={insights.monopolio} />
-        <CardAlerta tipo="concentracao"    dados={insights.concentracao} />
-        <CardAlerta tipo="benford"         dados={insights.benford} />
+        <CardAlerta tipo="zScore"          dados={insights.zScore}          filtros={filtros} />
+        <CardAlerta tipo="fracionamento"   dados={insights.fracionamento}   filtros={filtros} />
+        <CardAlerta tipo="monopolio"       dados={insights.monopolio}       filtros={filtros} />
+        <CardAlerta tipo="concentracao"    dados={insights.concentracao}    filtros={filtros} />
+        <CardAlerta tipo="benford"         dados={insights.benford}         filtros={filtros} />
       </Stack>
 
       {/* ── Nota de rodapé ────────────────────────────────────────────── */}
