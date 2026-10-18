@@ -349,6 +349,19 @@ export default function ModalSobre({ aberto, aoFechar }) {
                   Orientação metodológica e estruturação analítica do projeto acadêmico.
                 </Typography>
               </Grid>
+
+              <Grid item xs={12}>
+                <Typography variant="caption" color="text.secondary" fontWeight={700} sx={{ display: 'block', mb: 0.5 }}>
+                  Banca Examinadora:
+                </Typography>
+                <Stack spacing={0.5}>
+                  {['Prof. Carlos Augusto Gomes', 'Profa. Viviane Ramalho de Azevedo'].map((membro) => (
+                    <Typography key={membro} variant="body2" fontWeight={600} color="text.primary">
+                      • {membro}
+                    </Typography>
+                  ))}
+                </Stack>
+              </Grid>
             </Grid>
           </Box>
         </Stack>
