@@ -16,6 +16,7 @@ import { useTheme } from '@mui/material/styles';
 
 import AccountBalanceRoundedIcon from '@mui/icons-material/AccountBalanceRounded';
 import CloudOffRoundedIcon from '@mui/icons-material/CloudOffRounded';
+import CompareArrowsRoundedIcon from '@mui/icons-material/CompareArrowsRounded';
 import ManageSearchRoundedIcon from '@mui/icons-material/ManageSearchRounded';
 import PlagiarismRoundedIcon from '@mui/icons-material/PlagiarismRounded';
 import QueryStatsRoundedIcon from '@mui/icons-material/QueryStatsRounded';
@@ -39,11 +40,15 @@ import PainelAuditoria from '../../componentes/abaAuditoria/PainelAuditoria';
 // Aba 4 — "Evidências"
 import TabelaEvidenciasAvancada from '../../componentes/abaEvidencias/TabelaEvidenciasAvancada';
 
+// Aba 5 — "Comparação"
+import ComparacaoMunicipios from '../../componentes/abaComparacao/ComparacaoMunicipios';
+
 import { buscarAnalise } from '../../servicos/apiGovtrace';
 import { formatarPeriodo } from '../../utilitarios/formatadores';
 
-// ─── Definição das 4 abas ────────────────────────────────────────────────────
-// rotuloCurto: usado no celular, onde as 4 abas precisam caber lado a lado
+// ─── Definição das 5 abas ────────────────────────────────────────────────────
+// rotuloCurto: usado no celular. Com 5 abas, a barra passou a ser sempre
+// "scrollable" (ver Tabs abaixo) — em fullWidth, 5 rótulos ficariam cramados.
 const ABAS = [
   {
     id: 'cidade',
@@ -72,6 +77,13 @@ const ABAS = [
     rotuloCurto: 'Evidências',
     icone: PlagiarismRoundedIcon,
     descricao: 'Registros brutos para rastreabilidade',
+  },
+  {
+    id: 'comparacao',
+    rotulo: 'Comparação',
+    rotuloCurto: 'Comparar',
+    icone: CompareArrowsRoundedIcon,
+    descricao: 'Compare dois municípios lado a lado',
   },
 ];
 
@@ -241,8 +253,9 @@ export default function Painel() {
     // ── Painel com abas ──────────────────────────────────────────────────────
     return (
       <Box>
-        {/* Barra de abas: no celular, 4 abas visíveis lado a lado (sem setas
-            escondendo opções); do tablet em diante, ícone + rótulo completo */}
+        {/* Barra de abas: scrollable em qualquer largura — com 5 abas,
+            fullWidth deixaria os rótulos cramados no celular. As setas de
+            rolagem só aparecem quando a barra realmente não cabe. */}
         <Paper
           elevation={0}
           sx={{ borderRadius: '16px', border: '1px solid', borderColor: 'divider', mb: { xs: 2.5, sm: 3 }, overflow: 'hidden' }}
@@ -250,8 +263,9 @@ export default function Painel() {
           <Tabs
             value={abaAtiva}
             onChange={(_, novaAba) => setAbaAtiva(novaAba)}
-            variant={ehCelular ? 'fullWidth' : 'scrollable'}
-            scrollButtons={ehCelular ? false : 'auto'}
+            variant="scrollable"
+            scrollButtons="auto"
+            allowScrollButtonsMobile
             textColor="primary"
             indicatorColor="primary"
             aria-label="Seções da análise"
@@ -389,6 +403,20 @@ function ConteudoAba({ id, props }) {
 
     case 'evidencias':
       return <TabelaEvidenciasAvancada despesas={props.dadosBrutos} />;
+
+    case 'comparacao':
+      return (
+        <ComparacaoMunicipios
+          filtros={props.filtros}
+          // Repassa os dados já carregados desta cidade (se houver) para a
+          // Cidade A não refazer a mesma consulta ao TCE-SP.
+          dadosAtuais={
+            props.dadosBrutos?.length
+              ? { totais: props.totais, distribuicao: props.distribuicao, insights: props.insights }
+              : null
+          }
+        />
+      );
 
     default:
       return null;

@@ -17,6 +17,11 @@ import PieChartOutlineRoundedIcon from '@mui/icons-material/PieChartOutlineRound
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 
 import ExplicacaoCidada from '../ExplicacaoCidada';
+import BotaoProvaMatematica from '../ProvaMatematica';
+import TermometroRisco, { descricaoTermometro } from '../TermometroRisco';
+
+// Espelha PARAMETROS_ANALISE.CONCENTRACAO_CR5_ALERTA da GovTrace API
+const LIMITE_CR5 = 30;
 
 /**
  * CardAlerta — Card de resultado de motor estatístico
@@ -352,7 +357,14 @@ function DetalheConcentracao({ dados }) {
       <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', mb: 1 }}>
         Top 5 — {dados.percentual}% do total do período
       </Typography>
-      <Stack spacing={1}>
+      <TermometroRisco
+        percentual={Number(dados.percentual)}
+        limite={LIMITE_CR5}
+        cor={dados.alerta ? '#B45309' : '#15803D'}
+        rotuloUnidade={`Limite ${LIMITE_CR5}%`}
+        descricao={descricaoTermometro(dados.percentual, LIMITE_CR5, 'concentrados nos 5 maiores fornecedores')}
+      />
+      <Stack spacing={1} sx={{ mt: 2.5 }}>
         {dados.top5.map((f, i) => (
           <Stack key={f.id || i} direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }}
             spacing={{ xs: 1, sm: 0 }}
@@ -450,6 +462,9 @@ export default function CardAlerta({ tipo, dados }) {
 
         {/* ── Métrica principal: o dado é o herói ───────────────────────── */}
         {metrica && <MetricaHeroi {...metrica} alerta={alerta} />}
+
+        {/* ── Prova dos 9: anima a fórmula oficial com os números reais ──── */}
+        <BotaoProvaMatematica tipo={tipo} dados={dados} />
 
         {/* ── Registros que sustentam a métrica (sempre visíveis) ───────── */}
         {alerta && (

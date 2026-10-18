@@ -10,6 +10,7 @@ import VerifiedRoundedIcon from '@mui/icons-material/VerifiedRounded';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 
 import ExplicacaoCidada from '../ExplicacaoCidada';
+import TermometroRisco, { descricaoTermometro } from '../TermometroRisco';
 import {
   formatarInteiro,
   formatarMoeda,
@@ -17,6 +18,7 @@ import {
   formatarPercentual,
   formatarPeriodo,
 } from '../../utilitarios/formatadores';
+import { formatarEmSalariosMinimos } from '../../utilitarios/traducaoCivica';
 
 /**
  * HeroCidade — Panorama financeiro do município (Aba "A Cidade")
@@ -116,55 +118,6 @@ function CartaoIndicador({ id, rotulo, Icone, cor, valor, valorAcessivel, comple
   );
 }
 
-// ─── Gráfico de bala: percentual vs. limite de atenção ──────────────────────
-function BarraLimite({ percentual, cor }) {
-  const preenchimento = Math.min(Math.max(percentual, 0), 100);
-  const descricao =
-    `${formatarPercentual(percentual)} dos recursos concentrados nos 5 maiores fornecedores. ` +
-    `Limite de atenção: ${LIMITE_CR5}%.`;
-
-  return (
-    <Box role="img" aria-label={descricao} sx={{ mt: 2.5 }}>
-      <Box sx={{ position: 'relative', height: 14, borderRadius: '7px', bgcolor: '#E2E8F0' }}>
-        <Box
-          sx={{
-            height: '100%',
-            width: `${preenchimento}%`,
-            minWidth: preenchimento > 0 ? 6 : 0,
-            borderRadius: '7px',
-            bgcolor: cor,
-            transition: 'width 0.8s cubic-bezier(0.22, 1, 0.36, 1)',
-          }}
-        />
-        {/* Marcador do limite */}
-        <Box
-          sx={{
-            position: 'absolute',
-            top: -5,
-            bottom: -5,
-            left: `${LIMITE_CR5}%`,
-            width: 3,
-            ml: '-1.5px',
-            borderRadius: '2px',
-            bgcolor: '#1E293B',
-          }}
-        />
-      </Box>
-
-      <Box sx={{ position: 'relative', height: 20, mt: 0.75, fontSize: '0.8125rem', color: 'text.secondary' }}>
-        <Box component="span" sx={{ position: 'absolute', left: 0 }}>0%</Box>
-        <Box
-          component="span"
-          sx={{ position: 'absolute', left: `${LIMITE_CR5}%`, transform: 'translateX(-50%)', fontWeight: 600, color: 'text.primary', whiteSpace: 'nowrap' }}
-        >
-          Limite {LIMITE_CR5}%
-        </Box>
-        <Box component="span" sx={{ position: 'absolute', right: 0 }}>100%</Box>
-      </Box>
-    </Box>
-  );
-}
-
 // ─── Cartão de concentração de mercado (CR5) ─────────────────────────────────
 function CartaoConcentracao({ concentracao }) {
   const { alerta, percentual, somaTop5, insightEducativo } = concentracao;
@@ -227,7 +180,13 @@ function CartaoConcentracao({ concentracao }) {
               </Typography>
             </Stack>
 
-            <BarraLimite percentual={Number(percentual)} cor={status.cor} />
+            <TermometroRisco
+              percentual={Number(percentual)}
+              limite={LIMITE_CR5}
+              cor={status.cor}
+              rotuloUnidade={`Limite ${LIMITE_CR5}%`}
+              descricao={descricaoTermometro(percentual, LIMITE_CR5, 'dos recursos concentrados nos 5 maiores fornecedores')}
+            />
 
             <ExplicacaoCidada>
               <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, mb: 1.5 }}>
@@ -320,7 +279,11 @@ export default function HeroCidade({ totais, concentracao, filtros }) {
               </Box>
             </>
           }
-          explicacao="Empenho é a reserva de dinheiro no orçamento para uma despesa: a prefeitura se compromete a pagar. Não significa que o dinheiro já saiu do caixa. O total soma empenhos e reforços e desconta as anulações do período."
+          explicacao={
+            `Empenho é a reserva de dinheiro no orçamento para uma despesa: a prefeitura se compromete a pagar. ` +
+            `Não significa que o dinheiro já saiu do caixa. O total soma empenhos e reforços e desconta as anulações do período. ` +
+            `Para dar uma ideia de escala: esse valor equivale a ${formatarEmSalariosMinimos(valorTotal)}.`
+          }
         />
 
         <CartaoIndicador

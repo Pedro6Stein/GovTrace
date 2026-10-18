@@ -1,6 +1,5 @@
-import { useState, useEffect } from 'react';
 import { Autocomplete, Box, CircularProgress, FormControl, InputLabel, MenuItem, Paper, Select, TextField, Typography } from '@mui/material';
-import { buscarMunicipiosSP } from '../../servicos/ibge';
+import { useMunicipiosSP } from '../../servicos/ibge';
 import { MESES_DISPONIVEIS, ANOS_DISPONIVEIS } from '../../dados/configuracoes';
 
 /**
@@ -10,19 +9,7 @@ import { MESES_DISPONIVEIS, ANOS_DISPONIVEIS } from '../../dados/configuracoes';
  * segunda (economiza ~1/3 da primeira dobra); do tablet em diante, uma linha.
  */
 export default function SeletorPeriodo({ filtros, onFiltroChange }) {
-  const [municipiosSP, setMunicipiosSP] = useState([]);
-  const [carregandoMunicipios, setCarregandoMunicipios] = useState(true);
-
-  useEffect(() => {
-    const carregarMunicipios = async () => {
-      setCarregandoMunicipios(true);
-      const nomes = await buscarMunicipiosSP();
-      setMunicipiosSP(nomes);
-      setCarregandoMunicipios(false);
-    };
-
-    carregarMunicipios();
-  }, []);
+  const { municipios: municipiosSP, carregando: carregandoMunicipios } = useMunicipiosSP();
 
   const handleChange = (campo, valor) => {
     onFiltroChange({ ...filtros, [campo]: valor });
