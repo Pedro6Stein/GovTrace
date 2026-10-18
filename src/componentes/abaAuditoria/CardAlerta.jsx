@@ -1,10 +1,13 @@
+import { Suspense, lazy, useState } from 'react';
 import {
   Box,
   Card,
   CardContent,
   Chip,
   Divider,
+  IconButton,
   Stack,
+  Tooltip,
   Typography,
 } from '@mui/material';
 
@@ -15,10 +18,16 @@ import CompressRoundedIcon from '@mui/icons-material/CompressRounded';
 import BalanceRoundedIcon from '@mui/icons-material/BalanceRounded';
 import PieChartOutlineRoundedIcon from '@mui/icons-material/PieChartOutlineRounded';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
+import ShareRoundedIcon from '@mui/icons-material/ShareRounded';
 
+import ContornoErro from '../ContornoErro';
 import ExplicacaoCidada from '../ExplicacaoCidada';
 import BotaoProvaMatematica from '../ProvaMatematica';
 import TermometroRisco, { descricaoTermometro } from '../TermometroRisco';
+
+// Carregado só quando alguém clica em "Compartilhar" — html-to-image não deve
+// pesar o bundle de quem nunca gera uma imagem (mesma lógica do DialogoProva).
+const DialogoCompartilhar = lazy(() => import('./DialogoCompartilhar'));
 
 // Espelha PARAMETROS_ANALISE.CONCENTRACAO_CR5_ALERTA da GovTrace API
 const LIMITE_CR5 = 30;
@@ -37,7 +46,9 @@ const LIMITE_CR5 = 30;
  */
 
 // ─── Config visual e textual por tipo de motor ───────────────────────────────
-const MOTOR_CONFIG = {
+// Exportado: reaproveitado por CartaoCompartilhavel para manter a mesma
+// linguagem visual (ícone, cor, rótulo) no card de compartilhamento.
+export const MOTOR_CONFIG = {
   zScore: {
     rotulo: 'Z-Score',
     tituloNormal: 'Distribuição Estatística Normal',
@@ -101,7 +112,8 @@ const plural = (n, singular, pluralTxt) => (n === 1 ? singular : pluralTxt);
 // ─── Métrica principal (o "herói" do card) por tipo de motor ─────────────────
 // Motores com amostra insuficiente retornam apenas { alerta: false }; nesse
 // caso a lista esperada vem undefined e exibimos "—" em vez de um zero enganoso.
-function extrairMetrica(tipo, dados) {
+// Exportado pelo mesmo motivo que MOTOR_CONFIG acima.
+export function extrairMetrica(tipo, dados) {
   switch (tipo) {
     case 'zScore': {
       const { outliers } = dados;
@@ -175,7 +187,8 @@ function MetricaHeroi({ valor, legenda, alerta }) {
 }
 
 // ─── Badge de status ──────────────────────────────────────────────────────────
-function BadgeStatus({ alerta }) {
+// Exportado pelo mesmo motivo que MOTOR_CONFIG/extrairMetrica acima.
+export function BadgeStatus({ alerta }) {
   return (
     <Chip
       icon={
@@ -398,7 +411,9 @@ function Detalhe({ tipo, dados }) {
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
-export default function CardAlerta({ tipo, dados }) {
+export default function CardAlerta({ tipo, dados, filtros }) {
+  const [compartilharAberto, setCompartilharAberto] = useState(false);
+
   if (!dados) return null;
 
   const cfg = MOTOR_CONFIG[tipo];
@@ -458,6 +473,18 @@ export default function CardAlerta({ tipo, dados }) {
               {tituloExibido}
             </Typography>
           </Box>
+
+          {/* Gera uma imagem deste resultado para baixar/compartilhar */}
+          <Tooltip title="Compartilhar este resultado">
+            <IconButton
+              size="small"
+              aria-label="Compartilhar este resultado"
+              onClick={() => setCompartilharAberto(true)}
+              sx={{ flexShrink: 0, color: 'text.disabled' }}
+            >
+              <ShareRoundedIcon sx={{ fontSize: 19 }} />
+            </IconButton>
+          </Tooltip>
         </Stack>
 
         {/* ── Métrica principal: o dado é o herói ───────────────────────── */}
@@ -486,6 +513,20 @@ export default function CardAlerta({ tipo, dados }) {
           </Typography>
         </ExplicacaoCidada>
       </CardContent>
+
+      {compartilharAberto && (
+        <ContornoErro mensagem="Não foi possível gerar a imagem para compartilhar.">
+          <Suspense fallback={null}>
+            <DialogoCompartilhar
+              aberto={compartilharAberto}
+              aoFechar={() => setCompartilharAberto(false)}
+              tipo={tipo}
+              dados={dados}
+              filtros={filtros}
+            />
+          </Suspense>
+        </ContornoErro>
+      )}
     </Card>
   );
 }

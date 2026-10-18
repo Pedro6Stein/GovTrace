@@ -399,7 +399,7 @@ function ConteudoAba({ id, props }) {
       );
 
     case 'auditoria':
-      return <PainelAuditoria insights={props.insights} />;
+      return <PainelAuditoria insights={props.insights} filtros={props.filtros} />;
 
     case 'evidencias':
       return <TabelaEvidenciasAvancada despesas={props.dadosBrutos} />;
