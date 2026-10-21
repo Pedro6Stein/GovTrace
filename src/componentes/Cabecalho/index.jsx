@@ -181,7 +181,7 @@ export default function Cabecalho() {
                   color="primary"
                   startIcon={<QueryStatsRoundedIcon />}
                   onClick={() => setModalAberto(true)}
-                  aria-label="Abrir metodologia de auditoria"
+                  aria-label="Abrir metodologia estatística"
                   sx={{
                     display: { xs: 'none', sm: 'inline-flex' },
                     // Sobrescreve para estilo contido mas sem gradiente pesado
@@ -221,10 +221,10 @@ export default function Cabecalho() {
                 </Tooltip>
 
                 {/* Mobile: Ícone Metodologia */}
-                <Tooltip title="Ver metodologia de auditoria" arrow>
+                <Tooltip title="Ver metodologia estatística" arrow>
                   <IconButton
                     onClick={() => setModalAberto(true)}
-                    aria-label="Metodologia de auditoria"
+                    aria-label="Metodologia estatística"
                     size="small"
                     sx={{
                       display: { xs: 'flex', sm: 'none' },

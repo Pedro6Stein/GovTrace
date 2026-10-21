@@ -7,7 +7,7 @@ import EventRoundedIcon from '@mui/icons-material/EventRounded';
 import PaymentsRoundedIcon from '@mui/icons-material/PaymentsRounded';
 import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded';
 import VerifiedRoundedIcon from '@mui/icons-material/VerifiedRounded';
-import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
+import InsightsRoundedIcon from '@mui/icons-material/InsightsRounded';
 
 import ExplicacaoCidada from '../ExplicacaoCidada';
 import TermometroRisco, { descricaoTermometro } from '../TermometroRisco';
@@ -124,7 +124,7 @@ function CartaoConcentracao({ concentracao }) {
   const temPercentual = percentual !== undefined && Number.isFinite(Number(percentual));
 
   const status = alerta
-    ? { rotulo: 'Ponto para análise', Icone: WarningAmberRoundedIcon, cor: '#B45309', fundo: '#FFFBEB', borda: '#FCD34D' }
+    ? { rotulo: 'Destaque estatístico', Icone: InsightsRoundedIcon, cor: '#B45309', fundo: '#FFFBEB', borda: '#FCD34D' }
     : { rotulo: 'Dentro do esperado', Icone: CheckCircleRoundedIcon, cor: '#15803D', fundo: '#F0FDF4', borda: '#86EFAC' };
 
   return (
@@ -195,7 +195,7 @@ function CartaoConcentracao({ concentracao }) {
               <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
                 <strong>Método (CR5):</strong> soma o que os 5 maiores fornecedores receberam e divide
                 pelo total do período. Acima de {LIMITE_CR5}%, o município depende muito de poucas
-                empresas. Isso é um alerta estatístico, não uma acusação.
+                empresas. Isso é um destaque estatístico, não um juízo de valor.
               </Typography>
             </ExplicacaoCidada>
           </>

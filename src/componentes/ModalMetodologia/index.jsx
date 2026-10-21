@@ -1,55 +1,71 @@
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, Typography, Box, Divider } from '@mui/material';
 import { IconeInfo } from '../../icones/icones';
 
+// Mesma ordem e mesmo vocabulário das cenas do Laboratório Matemático
+const SECOES = [
+  {
+    titulo: '1. Curva Z-Score: pontos de alta amplitude',
+    texto:
+      'Calcula a média e o desvio padrão de todos os lançamentos válidos do período (pagamentos de pessoal e repasses entre órgãos públicos ficam de fora). Cada valor recebe um Z, que diz quantos desvios padrão ele está acima da média. Lançamentos com Z maior que 4 são destacados como pontos de alta amplitude. Valores grandes costumam vir de obras, repasses ou contratos anuais.',
+  },
+  {
+    titulo: '2. Recorrência de lançamentos',
+    texto:
+      'Agrupa os registros acima de R$ 500 por credor e por valor exato. Quando o mesmo valor aparece 5 vezes ou mais no período, o grupo é destacado. A contagem inclui as etapas contábeis de cada documento (empenho, liquidação e pagamento); por isso a tela mostra também quantos empenhos diferentes há em cada grupo. Repetições são comuns em serviços mensais, aluguéis e parcelas.',
+  },
+  {
+    titulo: '3. Concentração setorial',
+    texto:
+      'Para cada área com mais de R$ 50 mil no período, calcula a fatia de cada credor. Quando um único credor fica com 50% ou mais do valor da área, a área é destacada. Isso pode acontecer quando poucos prestadores atendem um serviço específico.',
+  },
+  {
+    titulo: '4. Índice CR5: participação dos 5 maiores credores',
+    texto:
+      'Soma o que os 5 maiores credores receberam e divide pelo total do período. Acima de 30%, a participação é destacada como elevada.',
+  },
+  {
+    titulo: '5. Lei de Newcomb-Benford: primeiros dígitos',
+    texto:
+      'Em conjuntos grandes de valores financeiros reais, o dígito 1 aparece como primeiro número em cerca de 30% dos casos, e a frequência diminui até o 9 (cerca de 4,6%). A cena compara essa proporção esperada com a do município. Diferenças acima de 5 pontos percentuais em um dígito são destacadas; com menos de 100 lançamentos, a comparação não é feita.',
+  },
+];
+
 export default function ModalMetodologia({ aberto, aoFechar }) {
   return (
     <Dialog open={aberto} onClose={aoFechar} maxWidth="md" fullWidth scroll="paper">
       <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 700 }}>
         <IconeInfo color="primary" />
-        Metodologia de Auditoria Algorítmica
+        Metodologia do Laboratório Matemático
       </DialogTitle>
       <DialogContent dividers sx={{ p: { xs: 2, sm: 4 } }}>
         <Typography variant="body1" paragraph>
-          O <strong>GovTrace</strong> utiliza ciência de dados e algoritmos de complexidade linear O(n) para auditar despesas públicas. 
-          O sistema não emite juízos de valor nem acusações de fraude; atua exclusivamente na identificação de anomalias matemáticas e desvios de padrão em relação à contabilidade natural.
+          O <strong>GovTrace</strong> aplica cinco métodos estatísticos conhecidos aos lançamentos
+          oficiais publicados pelo TCE-SP. Os métodos descrevem como os números se comportam; eles não
+          fazem juízo de valor sobre pessoas, empresas ou sobre a gestão. Um destaque estatístico é um
+          ponto de partida para consulta, e a interpretação final cabe aos órgãos de controle.
+        </Typography>
+        <Typography variant="body2" color="text.secondary" paragraph>
+          Na tela do Laboratório, os credores aparecem com uma identidade anônima. O destaque é sempre o
+          número do empenho, que pode ser conferido na Base de Lançamentos ou no portal do TCE-SP.
         </Typography>
 
-        <Box sx={{ my: 4 }}>
-          <Typography variant="h6" color="primary.main" fontWeight={600} gutterBottom>
-            1. Lei de Benford (Newcomb-Benford)
-          </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            Princípio matemático que demonstra que, em conjuntos de dados financeiros reais e orgânicos, o dígito "1" aparece como primeiro número em cerca de 30% das vezes, diminuindo logaritmicamente até ao "9" (4,6%). 
-            O nosso motor analisa a frequência dos primeiros dígitos das notas fiscais. Desvios abruptos indicam forte probabilidade estatística de dados fabricados, tabelados ou intervenção humana não natural.
-          </Typography>
-        </Box>
-        <Divider />
-
-        <Box sx={{ my: 4 }}>
-          <Typography variant="h6" color="primary.main" fontWeight={600} gutterBottom>
-            2. Z-Score (Desvio Padrão Forense)
-          </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            Cálculo estatístico que mede a distância de um valor em relação à média do município. 
-            O GovTrace isola a máquina pública e calcula a variância de todos os pagamentos privados. 
-            Valores que ultrapassam 4 desvios padrões (Z {'>'} 4) são classificados como <em>outliers</em> extremos, merecendo auditoria manual detalhada por representarem anomalias de volume.
-          </Typography>
-        </Box>
-        <Divider />
-
-        <Box sx={{ mt: 4 }}>
-          <Typography variant="h6" color="primary.main" fontWeight={600} gutterBottom>
-            3. Fracionamento Temporal e Concentração (CR)
-          </Typography>
-          <Typography variant="body2" color="text.secondary" paragraph>
-            Utilizamos heurísticas de rastreio para identificar a injeção repetitiva de valores exatos para o mesmo CNPJ no mesmo período (indício de fuga ao limite de licitação). 
-            Em paralelo, o motor de Concentração avalia o grau de dependência comercial do município em relação a um grupo restrito de fornecedores (semelhante ao Índice Herfindahl-Hirschman).
-          </Typography>
-        </Box>
+        {SECOES.map((secao, i) => (
+          <Box key={secao.titulo}>
+            {i > 0 && <Divider />}
+            <Box sx={{ my: 3.5 }}>
+              <Typography variant="h6" color="primary.main" fontWeight={600} gutterBottom>
+                {secao.titulo}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+                {secao.texto}
+              </Typography>
+            </Box>
+          </Box>
+        ))}
       </DialogContent>
       <DialogActions sx={{ p: 2, px: 3 }}>
         <Button onClick={aoFechar} variant="contained" disableElevation>
-          Compreendi a Metodologia
+          Entendi
         </Button>
       </DialogActions>
     </Dialog>

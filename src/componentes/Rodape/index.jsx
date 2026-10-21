@@ -119,7 +119,7 @@ export default function Rodape() {
                 </Typography>
               </Stack>
               <Typography sx={{ color: ESCURO.textoSuave, fontSize: '0.9375rem', lineHeight: 1.6 }}>
-                Transparência pública para todos: auditoria cidadã das despesas municipais de
+                Transparência pública para todos: acompanhamento cidadão das despesas municipais de
                 São Paulo, com código aberto.
               </Typography>
             </Box>

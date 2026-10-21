@@ -31,7 +31,7 @@ const RECURSOS = [
 ];
 
 const LIMITACOES = [
-  'A tabela da aba "Evidências" tem muitas colunas e pode exigir rolagem lateral em telas pequenas.',
+  'A tabela da aba "Base de Lançamentos" tem muitas colunas e pode exigir rolagem lateral em telas pequenas.',
   'A classificação das despesas por área usa a atividade oficial das empresas (CNAE), mas pagamentos a pessoas físicas e algumas atividades mistas ainda são estimados pelo nome do fornecedor. As áreas podem divergir da classificação contábil do orçamento.',
 ];
 

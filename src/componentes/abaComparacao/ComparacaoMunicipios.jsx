@@ -14,7 +14,7 @@ import {
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import CloudOffRoundedIcon from '@mui/icons-material/CloudOffRounded';
 import CompareArrowsRoundedIcon from '@mui/icons-material/CompareArrowsRounded';
-import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
+import InsightsRoundedIcon from '@mui/icons-material/InsightsRounded';
 
 import { useMunicipiosSP } from '../../servicos/ibge';
 import { useAnaliseMunicipio } from './useAnaliseMunicipio';
@@ -134,8 +134,8 @@ function PainelResultado({ resultado }) {
             <CabecalhoMetrica>Concentração de mercado (CR5)</CabecalhoMetrica>
             <Chip
               size="small"
-              icon={concentracao.alerta ? <WarningAmberRoundedIcon /> : <CheckCircleRoundedIcon />}
-              label={concentracao.alerta ? 'Ponto para análise' : 'Dentro do esperado'}
+              icon={concentracao.alerta ? <InsightsRoundedIcon /> : <CheckCircleRoundedIcon />}
+              label={concentracao.alerta ? 'Destaque estatístico' : 'Dentro do esperado'}
               sx={{
                 fontWeight: 700,
                 color: concentracao.alerta ? '#B45309' : '#15803D',

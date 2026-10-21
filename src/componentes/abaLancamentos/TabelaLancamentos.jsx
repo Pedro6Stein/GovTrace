@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 
 import {
+  Alert,
   Box,
+  Button,
   Card,
   CardContent,
   Chip,
@@ -23,7 +25,7 @@ import {
 
 import ClearRoundedIcon from '@mui/icons-material/ClearRounded';
 import FilterListRoundedIcon from '@mui/icons-material/FilterListRounded';
-import PlagiarismRoundedIcon from '@mui/icons-material/PlagiarismRounded';
+import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import TrendingDownRoundedIcon from '@mui/icons-material/TrendingDownRounded';
 
@@ -69,13 +71,24 @@ const formatarMoeda = (valor) =>
     maximumFractionDigits: 2,
   });
 
-export default function TabelaEvidenciasAvancada({ despesas }) {
+/**
+ * TabelaLancamentos — Base de Lançamentos: todos os registros oficiais do
+ * TCE-SP do período, um a um.
+ *
+ * Props:
+ *   despesas         registros normalizados
+ *   empenhoEmFoco    número de empenho vindo do Laboratório ("Localizar
+ *                    Empenho na Base Geral"); filtra pelo número EXATO, com
+ *                    todas as etapas daquele documento
+ *   aoLimparEmpenho  () => remove o filtro de empenho
+ */
+export default function TabelaLancamentos({ despesas, empenhoEmFoco, aoLimparEmpenho }) {
   const [busca, setBusca] = useState('');
   const [filtroEvento, setFiltroEvento] = useState('TODOS');
   const [pagina, setPagina] = useState(0);
   const [linhasPorPagina, setLinhasPorPagina] = useState(25);
 
-  const listaSegura = Array.isArray(despesas) ? despesas : [];
+  const listaSegura = useMemo(() => (Array.isArray(despesas) ? despesas : []), [despesas]);
 
   // Extrai lista única de eventos presentes nos dados
   const eventosDisponiveis = useMemo(() => {
@@ -91,6 +104,11 @@ export default function TabelaEvidenciasAvancada({ despesas }) {
     const termo = busca.trim().toLowerCase();
 
     return listaSegura.filter((item) => {
+      // Filtro por empenho exato ("Seguir o rastro do empenho")
+      if (empenhoEmFoco && String(item.documento) !== String(empenhoEmFoco)) {
+        return false;
+      }
+
       // Filtro por evento
       if (filtroEvento !== 'TODOS' && item.evento !== filtroEvento) {
         return false;
@@ -111,7 +129,7 @@ export default function TabelaEvidenciasAvancada({ despesas }) {
 
       return true;
     });
-  }, [listaSegura, busca, filtroEvento]);
+  }, [listaSegura, busca, filtroEvento, empenhoEmFoco]);
 
   // Somatório financeiro exato dos registros exibidos/filtrados
   const somatorioFiltrado = useMemo(() => {
@@ -186,14 +204,14 @@ export default function TabelaEvidenciasAvancada({ despesas }) {
                   flexShrink: 0,
                 }}
               >
-                <PlagiarismRoundedIcon sx={{ fontSize: 22, color: 'primary.main' }} />
+                <ReceiptLongRoundedIcon sx={{ fontSize: 22, color: 'primary.main' }} />
               </Box>
               <Box>
                 <Typography variant="h6" fontWeight={700} color="text.primary">
-                  Evidências e Registros Oficiais
+                  Base de Lançamentos
                 </Typography>
                 <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.25 }}>
-                  Consulte os registros brutos do TCE-SP que alimentam todos os cálculos e análises forenses.
+                  Consulte, um a um, os registros oficiais do TCE-SP usados em todos os cálculos e cenas estatísticas.
                 </Typography>
               </Box>
             </Stack>
@@ -211,6 +229,22 @@ export default function TabelaEvidenciasAvancada({ despesas }) {
           </Stack>
         </CardContent>
       </Card>
+
+      {/* ── Empenho em foco (vindo do Laboratório Matemático) ──────────── */}
+      {empenhoEmFoco && (
+        <Alert
+          severity="info"
+          icon={<ReceiptLongRoundedIcon />}
+          action={
+            <Button color="inherit" size="small" onClick={aoLimparEmpenho} sx={{ fontWeight: 700, whiteSpace: 'nowrap' }}>
+              Ver todos
+            </Button>
+          }
+          sx={{ borderRadius: '14px', alignItems: 'center', fontSize: '0.9375rem' }}
+        >
+          Mostrando todas as etapas do <strong>empenho nº {empenhoEmFoco}</strong>.
+        </Alert>
+      )}
 
       {/* ── Controles de Busca e Filtros Rápidos ───────────────────────── */}
       <Paper
@@ -385,7 +419,7 @@ export default function TabelaEvidenciasAvancada({ despesas }) {
       >
         <Box sx={{ width: '100%', overflowX: 'auto' }}>
           <TableContainer sx={{ maxHeight: 680 }}>
-          <Table stickyHeader size="small" aria-label="Tabela detalhada de evidências">
+          <Table stickyHeader size="small" aria-label="Tabela de lançamentos oficiais do período">
             <TableHead>
               <TableRow>
                 <TableCell
@@ -495,7 +529,7 @@ export default function TabelaEvidenciasAvancada({ despesas }) {
               {despesasFiltradas.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} sx={{ textAlign: 'center', py: 8 }}>
-                    <PlagiarismRoundedIcon sx={{ fontSize: 40, color: 'text.disabled', mb: 1, opacity: 0.5 }} />
+                    <ReceiptLongRoundedIcon sx={{ fontSize: 40, color: 'text.disabled', mb: 1, opacity: 0.5 }} />
                     <Typography variant="body2" color="text.secondary" fontWeight={600}>
                       Nenhum registro encontrado
                     </Typography>
