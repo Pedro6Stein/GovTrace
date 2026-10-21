@@ -204,8 +204,8 @@ export default function ModalSobre({ aberto, aoFechar }) {
             >
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.6 }}>
                 <strong>Compromisso Científico:</strong> Todos os motores estatísticos aplicados pelo GovTrace
-                baseiam-se em métodos consagrados na ciência de dados (Lei de Benford, Z-Score e Fracionamento Temporal),
-                preservando neutralidade e respeito à legalidade, sem emissão de acusações ou juízos precipitados.
+                baseiam-se em métodos consagrados na ciência de dados (Lei de Benford, Z-Score, Recorrência de Lançamentos e Índice CR5),
+                preservando neutralidade e respeito à legalidade, sem juízo de valor sobre pessoas ou empresas.
               </Typography>
             </Box>
           </Box>
@@ -282,10 +282,10 @@ export default function ModalSobre({ aberto, aoFechar }) {
                 >
                   <QueryStatsRoundedIcon sx={{ color: '#7C3AED', fontSize: 24, mb: 1 }} />
                   <Typography variant="body2" fontWeight={700} color="text.primary" gutterBottom>
-                    Análise Forense
+                    Apoio Técnico
                   </Typography>
                   <Typography variant="caption" color="text.secondary" sx={{ lineHeight: 1.6, display: 'block' }}>
-                    Apoiar órgãos fiscalizadores e auditorias independentes com triagem automática de pontos fora do padrão.
+                    Apoiar órgãos de controle e pesquisadores com uma leitura estatística organizada dos lançamentos públicos.
                   </Typography>
                 </Box>
               </Grid>

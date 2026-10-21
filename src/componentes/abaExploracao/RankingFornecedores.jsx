@@ -29,8 +29,7 @@ import DrawerEvidencias from './DrawerEvidencias';
  *
  * Props:
  *   ranking     Array<{ id, nome, valorTotal, quantidade }>
- *   dadosBrutos Despesa[] — para filtrar as evidências no Drawer
- *   totais      { valorTotal } — para calcular a proporção visual de cada fornecedor
+ *   dadosBrutos Despesa[] — para filtrar os lançamentos no Drawer
  */
 
 // ─── Formata valor monetário compacto ────────────────────────────────────────
@@ -301,7 +300,7 @@ function ItemFornecedor({ fornecedor, posicao, proporcao, dadosBrutos, onVerEvid
 }
 
 // ─── Componente principal ─────────────────────────────────────────────────────
-export default function RankingFornecedores({ ranking, dadosBrutos, totais }) {
+export default function RankingFornecedores({ ranking, dadosBrutos }) {
   const [drawerAberto, setDrawerAberto] = useState(false);
   const [fornecedorSelecionado, setFornecedorSelecionado] = useState(null);
 

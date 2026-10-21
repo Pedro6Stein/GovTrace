@@ -161,7 +161,7 @@ export default function DrawerEvidencias({ aberto, aoFechar, fornecedor, despesa
           <IconButton
             onClick={aoFechar}
             size="small"
-            aria-label="Fechar painel de evidências"
+            aria-label="Fechar painel de lançamentos"
             sx={{ color: 'text.secondary', mt: -0.5 }}
           >
             <CloseRoundedIcon />

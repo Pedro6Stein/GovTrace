@@ -56,7 +56,7 @@ const slugMunicipio = (nome) =>
  *
  * Props:
  *   aberto, aoFechar
- *   tipo, dados   mesmos de CardAlerta — a fonte de verdade do resultado
+ *   tipo, dados   mesmos de CartaoCena — a fonte de verdade do resultado
  *   filtros       { municipio, ano, mes }
  */
 export default function DialogoCompartilhar({ aberto, aoFechar, tipo, dados, filtros }) {
@@ -127,7 +127,7 @@ export default function DialogoCompartilhar({ aberto, aoFechar, tipo, dados, fil
       await navigator.share({
         files: [arquivo],
         title: 'GovTrace — Transparência Pública',
-        text: 'Achado da auditoria algorítmica do GovTrace.',
+        text: 'Padrão estatístico do Laboratório Matemático do GovTrace.',
       });
     } catch (erro) {
       // AbortError = usuário cancelou o compartilhamento — não é uma falha real.
@@ -184,7 +184,7 @@ export default function DialogoCompartilhar({ aberto, aoFechar, tipo, dados, fil
           <Box
             component="img"
             src={urlImagem}
-            alt="Prévia da imagem gerada com o resultado da auditoria"
+            alt="Prévia da imagem gerada com o resultado do Laboratório Matemático"
             sx={{ width: '100%', maxWidth: 320, aspectRatio: '1 / 1', borderRadius: '12px', border: '1px solid', borderColor: 'divider' }}
           />
         )}

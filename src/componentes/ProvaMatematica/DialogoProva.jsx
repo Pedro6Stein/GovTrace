@@ -15,14 +15,14 @@ import {
 import { useTheme } from '@mui/material/styles';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 // Carregado só quando o diálogo abre (lazy no componente pai) — não pesa o
-// bundle inicial do site para quem nunca clica em "Ver a prova matemática".
+// bundle inicial do site para quem nunca clica em "Ver a fórmula passo a passo".
 import 'katex/dist/katex.min.css';
 
 import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded';
 import ScienceRoundedIcon from '@mui/icons-material/ScienceRounded';
-import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
+import InsightsRoundedIcon from '@mui/icons-material/InsightsRounded';
 
 import FormulaKatex from './FormulaKatex';
 import { formatarMoeda, formatarPercentual } from '../../utilitarios/formatadores';
@@ -109,9 +109,10 @@ function BarraComparativa({ rotulo, percentual, cor, animar, atraso, semAnimacao
 function ConteudoZScore({ dados, revelado, semAnimacao }) {
   const { estatisticas, outliers } = dados;
   const exemploOutlier = outliers?.[0];
-  // Sem alerta não há outlier nomeado; ainda assim a prova funciona, usando
-  // o maior valor válido do período (mesmo subconjunto usado no cálculo).
-  const nomeExemplo = exemploOutlier?.fornecedorNome ?? 'o maior pagamento válido do período';
+  // Sem destaque, a demonstração usa o maior valor válido do período (mesmo
+  // subconjunto do cálculo). O exemplo é identificado pelo número do empenho,
+  // nunca pelo nome do credor (regra do Laboratório Matemático).
+  const documentoExemplo = exemploOutlier?.documento;
   const valorExemplo = exemploOutlier?.valor ?? estatisticas.exemploValor;
 
   const zCalculado = (valorExemplo - estatisticas.media) / estatisticas.desvioPadrao;
@@ -120,7 +121,7 @@ function ConteudoZScore({ dados, revelado, semAnimacao }) {
   return (
     <>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.6 }}>
-        O Z-Score mede a quantos desvios padrão um pagamento está da média de todos os pagamentos
+        O Z-Score mede a quantos desvios padrão um lançamento está da média de todos os lançamentos
         do período. Esta é a fórmula oficial, usada em estatística desde o século XX:
       </Typography>
 
@@ -154,8 +155,8 @@ function ConteudoZScore({ dados, revelado, semAnimacao }) {
                   Z = {zCalculado.toFixed(2).replace('.', ',')}
                 </Typography>
                 <Chip
-                  icon={passouDoLimite ? <WarningAmberRoundedIcon /> : <CheckCircleRoundedIcon />}
-                  label={passouDoLimite ? `Passa do limite de ${estatisticas.limite}` : `Dentro do limite de ${estatisticas.limite}`}
+                  icon={passouDoLimite ? <InsightsRoundedIcon /> : <CheckCircleRoundedIcon />}
+                  label={passouDoLimite ? `Acima de Z = ${estatisticas.limite}` : `Dentro de Z = ${estatisticas.limite}`}
                   sx={{
                     fontWeight: 700,
                     color: passouDoLimite ? '#B45309' : '#15803D',
@@ -166,8 +167,8 @@ function ConteudoZScore({ dados, revelado, semAnimacao }) {
               </Stack>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5, lineHeight: 1.6 }}>
                 {passouDoLimite
-                  ? `Por isso ${exemploOutlier ? '"' + nomeExemplo + '"' : 'este valor'} aparece como Ponto para Análise: está estatisticamente muito distante do comportamento normal da cidade neste período.`
-                  : 'Dentro do limite de 4 desvios padrão, o sistema considera esse valor estatisticamente normal para a cidade neste período.'}
+                  ? `Por isso ${documentoExemplo ? `o empenho nº ${documentoExemplo}` : 'este valor'} aparece como ponto de alta amplitude: ele está muito acima do valor típico dos lançamentos deste período.`
+                  : `Abaixo de ${estatisticas.limite} desvios padrão, o valor fica dentro da curva esperada para este período.`}
               </Typography>
             </Box>
           </MotionDiv>
@@ -239,7 +240,7 @@ function ConteudoBenford({ dados, revelado, semAnimacao }) {
                 semAnimacao={semAnimacao}
               />
               <BarraComparativa
-                rotulo={`Observado nos ${dados.totalAnalisado.toLocaleString('pt-BR')} pagamentos analisados`}
+                rotulo={`Observado nos ${dados.totalAnalisado.toLocaleString('pt-BR')} lançamentos analisados`}
                 percentual={freq.percentualObservado}
                 cor={ultrapassou ? '#B45309' : '#7C3AED'}
                 animar={revelado}
@@ -248,7 +249,7 @@ function ConteudoBenford({ dados, revelado, semAnimacao }) {
               />
               <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mt: 1.5 }}>
                 <Chip
-                  icon={ultrapassou ? <WarningAmberRoundedIcon /> : <CheckCircleRoundedIcon />}
+                  icon={ultrapassou ? <InsightsRoundedIcon /> : <CheckCircleRoundedIcon />}
                   label={`Diferença de ${formatarPercentual(Math.abs(desvio))} (limite: ${limiarDesvio} p.p.)`}
                   sx={{
                     fontWeight: 700,
@@ -260,7 +261,7 @@ function ConteudoBenford({ dados, revelado, semAnimacao }) {
               </Stack>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5, lineHeight: 1.6 }}>
                 {ultrapassou
-                  ? 'Essa diferença passa da margem considerada natural — um indício estatístico de que valores podem ter sido tabelados ou fracionados, não uma prova de irregularidade.'
+                  ? 'Essa diferença passa da margem de referência. Isso pode acontecer, por exemplo, com contratos de valor tabelado, e serve só como ponto de partida para consulta.'
                   : 'Essa diferença está dentro da margem considerada natural: o comportamento dos números deste período parece orgânico.'}
               </Typography>
             </Box>
@@ -293,7 +294,7 @@ export default function DialogoProva({ tipo, dados, aberto, aoFechar }) {
     if (prefersReducedMotion) setRevelado(true);
   };
 
-  const titulo = tipo === 'zScore' ? 'Prova matemática — Z-Score' : 'Prova matemática — Lei de Benford';
+  const titulo = tipo === 'zScore' ? 'A fórmula passo a passo — Z-Score' : 'A fórmula passo a passo — Lei de Benford';
 
   return (
     <Dialog

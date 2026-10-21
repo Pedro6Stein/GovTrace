@@ -6,7 +6,7 @@ import ScienceRoundedIcon from '@mui/icons-material/ScienceRounded';
 import ContornoErro from '../ContornoErro';
 
 // KaTeX (~24kB) e Framer Motion só entram no bundle de quem efetivamente
-// clica em "Ver a prova matemática" — a maioria dos visitantes nunca paga
+// clica em "Ver a fórmula passo a passo" — a maioria dos visitantes nunca paga
 // esse custo. Ver justificativa no README (seção de performance).
 const DialogoProva = lazy(() => import('./DialogoProva'));
 
@@ -17,7 +17,7 @@ function CarregandoProva() {
   return (
     <Stack direction="row" spacing={1.25} alignItems="center" sx={{ mt: 2, color: 'text.secondary' }} role="status" aria-live="polite">
       <ScienceRoundedIcon sx={{ fontSize: 20, opacity: 0.5, animation: 'pulsar 1.4s ease-in-out infinite', '@keyframes pulsar': { '0%, 100%': { opacity: 0.3 }, '50%': { opacity: 0.8 } } }} />
-      <Typography variant="body2">Carregando a prova matemática…</Typography>
+      <Typography variant="body2">Carregando a fórmula passo a passo…</Typography>
     </Stack>
   );
 }
@@ -53,11 +53,11 @@ export default function BotaoProvaMatematica({ tipo, dados }) {
         variant="outlined"
         sx={{ mt: 2, minHeight: 40, fontWeight: 600, borderColor: '#CBD5E1', color: 'text.secondary' }}
       >
-        Ver a prova matemática
+        Ver a fórmula passo a passo
       </Button>
 
       {aberto && (
-        <ContornoErro mensagem="Não foi possível abrir a prova matemática. Verifique sua conexão.">
+        <ContornoErro mensagem="Não foi possível abrir a fórmula passo a passo. Verifique sua conexão.">
           <Suspense fallback={<CarregandoProva />}>
             <DialogoProva tipo={tipo} dados={dados} aberto={aberto} aoFechar={() => setAberto(false)} />
           </Suspense>

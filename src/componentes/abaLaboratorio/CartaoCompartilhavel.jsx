@@ -1,22 +1,22 @@
 import { Box, Typography } from '@mui/material';
 
-import { BadgeStatus, MOTOR_CONFIG, extrairMetrica } from './CardAlerta';
+import ChipStatus from './ChipStatus';
+import { MOTOR_CONFIG, extrairMetrica, resumoCompartilhavel } from './motores';
 import { formatarPeriodo } from '../../utilitarios/formatadores';
 
 /**
  * CartaoCompartilhavel — a imagem gerada quando alguém clica em "Compartilhar"
- * num CardAlerta.
+ * numa cena do Laboratório Matemático.
  *
  * Dimensão FIXA (1080×1080 — formato universal: Instagram, WhatsApp, Twitter/X,
  * LinkedIn), independente do viewport de quem está vendo a tela: este
  * componente nunca é exibido diretamente, é montado fora da tela por
  * DialogoCompartilhar e rasterizado em PNG via html-to-image. Por ser um
  * layout de exportação (não de leitura em tela), reaproveita a MESMA lógica
- * de interpretação de dado do card real (MOTOR_CONFIG/extrairMetrica/
- * BadgeStatus, exportados de CardAlerta.jsx) para nunca divergir do que o
- * usuário já viu na tela.
+ * de interpretação de dado da cena (motores.js e ChipStatus) para nunca
+ * divergir do que o usuário já viu na tela. Não exibe nome de credor.
  *
- * A explicação cidadã (`insightEducativo`) nunca é cortada — o texto
+ * O resumo (resumoCompartilhavel) nunca é cortado — o texto
  * completo sempre aparece. Quem controla isso é DialogoCompartilhar: ele
  * mede a altura real do texto renderizado (fora da tela) contra o espaço
  * disponível e, se não couber, reduz `fonteExplicacao` e mede de novo, até
@@ -38,10 +38,10 @@ export default function CartaoCompartilhavel({ tipo, dados, municipio, ano, mes,
   const cfg = MOTOR_CONFIG[tipo];
   if (!dados || !cfg) return null;
 
-  const { alerta, titulo, insightEducativo } = dados;
-  const { rotulo, tituloNormal, Icone, corIcone, fundoIcone } = cfg;
-  const tituloExibido = alerta ? titulo : tituloNormal;
+  const { alerta } = dados;
+  const { rotulo, titulo, Icone, cor: corIcone, fundo: fundoIcone } = cfg;
   const metrica = extrairMetrica(tipo, dados);
+  const resumo = resumoCompartilhavel(tipo, dados);
 
   return (
     <Box
@@ -104,8 +104,8 @@ export default function CartaoCompartilhavel({ tipo, dados, municipio, ano, mes,
           <Typography sx={{ fontSize: '16px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'text.disabled' }}>
             {rotulo}
           </Typography>
-          <Box sx={{ mt: '6px', '& .MuiChip-root': { fontSize: '15px', height: 32 } }}>
-            <BadgeStatus alerta={alerta} />
+          <Box sx={{ mt: '6px' }}>
+            <ChipStatus destaque={Boolean(alerta)} sx={{ fontSize: '15px', height: 32 }} />
           </Box>
         </Box>
       </Box>
@@ -126,7 +126,7 @@ export default function CartaoCompartilhavel({ tipo, dados, municipio, ano, mes,
           maxHeight: '76px', // 2 × 30px × 1.25 — teto real, não depende do clamp funcionar
         }}
       >
-        {tituloExibido}
+        {titulo}
       </Typography>
 
       {/* ── Número-herói ──────────────────────────────────────────────── */}
@@ -139,7 +139,7 @@ export default function CartaoCompartilhavel({ tipo, dados, municipio, ano, mes,
               fontSize: '140px',
               lineHeight: 1,
               letterSpacing: '-0.03em',
-              color: alerta ? '#B45309' : 'text.primary',
+              color: alerta ? '#92400E' : 'text.primary',
             }}
           >
             {metrica.valor}
@@ -150,14 +150,14 @@ export default function CartaoCompartilhavel({ tipo, dados, municipio, ano, mes,
         </Box>
       )}
 
-      {/* ── Explicação cidadã (texto completo, fonte ajustada por fora) ── */}
-      {insightEducativo && (
+      {/* ── Resumo em linguagem comum (texto completo, fonte ajustada por fora) */}
+      {resumo && (
         <Box data-papel="explicacao-container" sx={{ flex: 1, minHeight: 0, overflow: 'hidden', mt: '32px' }}>
           <Typography
             data-papel="explicacao"
             sx={{ fontSize: `${fonteExplicacao}px`, color: 'text.secondary', lineHeight: 1.55 }}
           >
-            {insightEducativo}
+            {resumo}
           </Typography>
         </Box>
       )}

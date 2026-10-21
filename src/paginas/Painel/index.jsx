@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 
 import {
   Box,
@@ -6,6 +6,7 @@ import {
   Container,
   Fade,
   Paper,
+  Skeleton,
   Stack,
   Tab,
   Tabs,
@@ -18,11 +19,12 @@ import AccountBalanceRoundedIcon from '@mui/icons-material/AccountBalanceRounded
 import CloudOffRoundedIcon from '@mui/icons-material/CloudOffRounded';
 import CompareArrowsRoundedIcon from '@mui/icons-material/CompareArrowsRounded';
 import ManageSearchRoundedIcon from '@mui/icons-material/ManageSearchRounded';
-import PlagiarismRoundedIcon from '@mui/icons-material/PlagiarismRounded';
-import QueryStatsRoundedIcon from '@mui/icons-material/QueryStatsRounded';
+import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
+import ScienceRoundedIcon from '@mui/icons-material/ScienceRounded';
 
 import Cabecalho from '../../componentes/Cabecalho';
+import ContornoErro from '../../componentes/ContornoErro';
 import Rodape from '../../componentes/Rodape';
 import SeletorPeriodo from '../../componentes/SeletorPeriodo';
 import SkeletonPainel from '../../componentes/SkeletonPainel';
@@ -34,17 +36,18 @@ import GraficoDestino from '../../componentes/abaCidade/GraficoDestino';
 // Aba 2 — "Exploração"
 import RankingFornecedores from '../../componentes/abaExploracao/RankingFornecedores';
 
-// Aba 3 — "Auditoria Algorítmica"
-import PainelAuditoria from '../../componentes/abaAuditoria/PainelAuditoria';
-
-// Aba 4 — "Evidências"
-import TabelaEvidenciasAvancada from '../../componentes/abaEvidencias/TabelaEvidenciasAvancada';
+// Aba 4 — "Base de Lançamentos"
+import TabelaLancamentos from '../../componentes/abaLancamentos/TabelaLancamentos';
 
 // Aba 5 — "Comparação"
 import ComparacaoMunicipios from '../../componentes/abaComparacao/ComparacaoMunicipios';
 
 import { buscarAnalise } from '../../servicos/apiGovtrace';
 import { formatarPeriodo } from '../../utilitarios/formatadores';
+
+// Aba 3 — "Laboratório Matemático" (lazy: as cenas animadas trazem o
+// Framer Motion, que não precisa pesar o carregamento inicial do site)
+const PainelLaboratorio = lazy(() => import('../../componentes/abaLaboratorio/PainelLaboratorio'));
 
 // ─── Definição das 5 abas ────────────────────────────────────────────────────
 // rotuloCurto: usado no celular. Com 5 abas, a barra passou a ser sempre
@@ -65,18 +68,18 @@ const ABAS = [
     descricao: 'Fornecedores e destinatários dos recursos',
   },
   {
-    id: 'auditoria',
-    rotulo: 'Auditoria Algorítmica',
-    rotuloCurto: 'Auditoria',
-    icone: QueryStatsRoundedIcon,
-    descricao: 'Motores de análise estatística',
+    id: 'laboratorio',
+    rotulo: 'Laboratório Matemático',
+    rotuloCurto: 'Laboratório',
+    icone: ScienceRoundedIcon,
+    descricao: 'Cenas animadas sobre os padrões estatísticos do período',
   },
   {
-    id: 'evidencias',
-    rotulo: 'Evidências',
-    rotuloCurto: 'Evidências',
-    icone: PlagiarismRoundedIcon,
-    descricao: 'Registros brutos para rastreabilidade',
+    id: 'lancamentos',
+    rotulo: 'Base de Lançamentos',
+    rotuloCurto: 'Lançamentos',
+    icone: ReceiptLongRoundedIcon,
+    descricao: 'Registros oficiais do TCE-SP, um a um',
   },
   {
     id: 'comparacao',
@@ -86,6 +89,8 @@ const ABAS = [
     descricao: 'Compare dois municípios lado a lado',
   },
 ];
+
+const INDICE_LANCAMENTOS = ABAS.findIndex((aba) => aba.id === 'lancamentos');
 
 // Superfície dos estados vazios/erro — raio explícito em px: no sx do MUI,
 // "borderRadius: 4" vira 4 × 16px = 64px (efeito "pílula" exagerado)
@@ -112,6 +117,11 @@ export default function Painel() {
 
   // Estado de navegação entre abas
   const [abaAtiva, setAbaAtiva] = useState(0);
+  const refAbas = useRef(null);
+
+  // "Seguir o rastro do empenho": o Laboratório pede, a Base de Lançamentos
+  // abre já filtrada por esse número de empenho
+  const [empenhoEmFoco, setEmpenhoEmFoco] = useState(null);
 
   // Estado de ciclo de vida da requisição (erro guarda a mensagem real da API)
   const [carregando, setCarregando] = useState(false);
@@ -139,6 +149,7 @@ export default function Painel() {
     const carregarDados = async () => {
       setCarregando(true);
       setErro(null);
+      setEmpenhoEmFoco(null);
 
       try {
         const analise = await buscarAnalise(filtros.municipio, filtros.ano, filtros.mes, {
@@ -163,6 +174,18 @@ export default function Painel() {
     return () => controlador.abort();
   }, [filtros]);
 
+  const localizarEmpenho = (documento) => {
+    setEmpenhoEmFoco(documento);
+    setAbaAtiva(INDICE_LANCAMENTOS);
+    const movimentoReduzido = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    refAbas.current?.scrollIntoView({ behavior: movimentoReduzido ? 'auto' : 'smooth', block: 'start' });
+  };
+
+  const trocarAba = (_, novaAba) => {
+    setAbaAtiva(novaAba);
+    setEmpenhoEmFoco(null);
+  };
+
   // ─── Props compartilhadas entre as abas ────────────────────────────────────
   const propsAbas = {
     dadosBrutos,
@@ -171,6 +194,9 @@ export default function Painel() {
     ranking,
     insights,
     filtros,
+    empenhoEmFoco,
+    aoLocalizarEmpenho: localizarEmpenho,
+    aoLimparEmpenho: () => setEmpenhoEmFoco(null),
   };
 
   // Refaz a consulta com os mesmos filtros (novo objeto dispara o useEffect)
@@ -257,12 +283,14 @@ export default function Painel() {
             fullWidth deixaria os rótulos cramados no celular. As setas de
             rolagem só aparecem quando a barra realmente não cabe. */}
         <Paper
+          ref={refAbas}
           elevation={0}
-          sx={{ borderRadius: '16px', border: '1px solid', borderColor: 'divider', mb: { xs: 2.5, sm: 3 }, overflow: 'hidden' }}
+          // scrollMarginTop: o cabeçalho é sticky e cobriria a barra de abas
+          sx={{ borderRadius: '16px', border: '1px solid', borderColor: 'divider', mb: { xs: 2.5, sm: 3 }, overflow: 'hidden', scrollMarginTop: { xs: 72, sm: 88 } }}
         >
           <Tabs
             value={abaAtiva}
-            onChange={(_, novaAba) => setAbaAtiva(novaAba)}
+            onChange={trocarAba}
             variant="scrollable"
             scrollButtons="auto"
             allowScrollButtonsMobile
@@ -372,6 +400,16 @@ function PainelAba({ children, ativo, id, 'aria-labelledby': labelledBy }) {
   );
 }
 
+function CarregandoLaboratorio() {
+  return (
+    <Stack spacing={2} role="status" aria-live="polite">
+      <Typography sx={{ color: 'text.secondary', fontSize: '1rem' }}>Preparando o Laboratório Matemático…</Typography>
+      <Skeleton variant="rounded" height={140} sx={{ borderRadius: '16px' }} />
+      <Skeleton variant="rounded" height={320} sx={{ borderRadius: '16px' }} />
+    </Stack>
+  );
+}
+
 // ─── Componente auxiliar: conteúdo de cada aba ───────────────────────────────
 function ConteudoAba({ id, props }) {
   switch (id) {
@@ -394,15 +432,33 @@ function ConteudoAba({ id, props }) {
         <RankingFornecedores
           ranking={props.ranking}
           dadosBrutos={props.dadosBrutos}
-          totais={props.totais}
         />
       );
 
-    case 'auditoria':
-      return <PainelAuditoria insights={props.insights} filtros={props.filtros} />;
+    case 'laboratorio':
+      return (
+        <ContornoErro mensagem="Não foi possível abrir o Laboratório Matemático. Verifique sua conexão.">
+          <Suspense fallback={<CarregandoLaboratorio />}>
+            <PainelLaboratorio
+              insights={props.insights}
+              despesas={props.dadosBrutos}
+              ranking={props.ranking}
+              totais={props.totais}
+              filtros={props.filtros}
+              aoLocalizarEmpenho={props.aoLocalizarEmpenho}
+            />
+          </Suspense>
+        </ContornoErro>
+      );
 
-    case 'evidencias':
-      return <TabelaEvidenciasAvancada despesas={props.dadosBrutos} />;
+    case 'lancamentos':
+      return (
+        <TabelaLancamentos
+          despesas={props.dadosBrutos}
+          empenhoEmFoco={props.empenhoEmFoco}
+          aoLimparEmpenho={props.aoLimparEmpenho}
+        />
+      );
 
     case 'comparacao':
       return (
