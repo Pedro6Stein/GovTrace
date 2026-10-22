@@ -2,7 +2,7 @@ import { useId, useLayoutEffect, useRef, useState } from 'react';
 import { Box, Stack, Typography } from '@mui/material';
 import { useInView, useReducedMotion } from 'framer-motion';
 
-import { CORES_PALCO } from './coresPalco';
+import { CORES_PALCO } from '../../../tema/coresPalco';
 
 /**
  * Palco — o "quadro-negro" das cenas matemáticas (estética Manim / 3Blue1Brown).

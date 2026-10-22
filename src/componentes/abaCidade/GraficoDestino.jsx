@@ -2,19 +2,8 @@ import { useEffect, useState } from 'react';
 
 import { Box, Card, CardContent, Stack, Typography } from '@mui/material';
 
-import AccountBalanceRoundedIcon from '@mui/icons-material/AccountBalanceRounded';
-import CleaningServicesRoundedIcon from '@mui/icons-material/CleaningServicesRounded';
-import ComputerRoundedIcon from '@mui/icons-material/ComputerRounded';
-import ConstructionRoundedIcon from '@mui/icons-material/ConstructionRounded';
-import DirectionsBusRoundedIcon from '@mui/icons-material/DirectionsBusRounded';
-import LocalHospitalRoundedIcon from '@mui/icons-material/LocalHospitalRounded';
-import PaletteRoundedIcon from '@mui/icons-material/PaletteRounded';
-import PersonRoundedIcon from '@mui/icons-material/PersonRounded';
-import RestaurantRoundedIcon from '@mui/icons-material/RestaurantRounded';
-import SchoolRoundedIcon from '@mui/icons-material/SchoolRounded';
-import VolunteerActivismRoundedIcon from '@mui/icons-material/VolunteerActivismRounded';
-
 import ExplicacaoCidada from '../ExplicacaoCidada';
+import { CATEGORIA, PADRAO } from './areas';
 import { formatarMoeda, formatarMoedaExtenso, formatarPercentual } from '../../utilitarios/formatadores';
 
 /**
@@ -35,79 +24,120 @@ import { formatarMoeda, formatarMoedaExtenso, formatarPercentual } from '../../u
  *                 (ausente na API antiga — a tela continua funcionando)
  */
 
-// Cores com contraste ≥ 3:1 sobre branco (WCAG 1.4.11 — objetos gráficos)
-const CATEGORIA = {
-  'Saúde e Medicamentos': {
-    Icone: LocalHospitalRoundedIcon,
-    cor: '#0284C7',
-    descricao: 'Hospitais, clínicas, farmácias, medicamentos, material hospitalar e veterinária (controle de zoonoses).',
-  },
-  'Educação e Ensino': {
-    Icone: SchoolRoundedIcon,
-    cor: '#7C3AED',
-    descricao: 'Escolas, creches, cursos, livros e material didático, pesquisa científica.',
-  },
-  'Infraestrutura, Obras e Urbanismo': {
-    Icone: ConstructionRoundedIcon,
-    cor: '#B45309',
-    descricao: 'Obras, pavimentação, material de construção, engenharia, energia elétrica, água e esgoto.',
-  },
-  'Transporte, Frotas e Mobilidade': {
-    Icone: DirectionsBusRoundedIcon,
-    cor: '#0369A1',
-    descricao: 'Combustível, veículos, oficinas e peças, locadoras e transporte de passageiros.',
-  },
-  'Tecnologia e Comunicação': {
-    Icone: ComputerRoundedIcon,
-    cor: '#0F766E',
-    descricao: 'Informática, softwares, telefonia e internet, publicidade e publicação de atos oficiais.',
-  },
-  'Alimentação e Abastecimento': {
-    Icone: RestaurantRoundedIcon,
-    cor: '#15803D',
-    descricao: 'Alimentos, supermercados, refeições e merenda terceirizada, agricultura.',
-  },
-  'Cultura, Esporte e Lazer': {
-    Icone: PaletteRoundedIcon,
-    cor: '#A16207',
-    descricao: 'Eventos, artes, patrimônio cultural, esportes e lazer.',
-  },
-  'Assistência Social': {
-    Icone: VolunteerActivismRoundedIcon,
-    cor: '#86198F', // 8,2:1 — a mais distante das outras 10 cores
-    descricao: 'Asilos e albergues, APAE e associações de defesa de direitos sociais.',
-  },
-  'Administração, Limpeza e Serviços Terceirizados': {
-    Icone: CleaningServicesRoundedIcon,
-    cor: '#475569',
-    descricao: 'Limpeza e coleta de lixo, vigilância, mão de obra terceirizada, consultorias e serviços de escritório.',
-  },
-  'Máquina Pública, Repasses e Encargos': {
-    Icone: AccountBalanceRoundedIcon,
-    cor: '#64748B',
-    descricao: 'Prefeitura, Câmara, INSS, bancos, previdência e repasses entre órgãos públicos.',
-  },
-  'Pessoa Física / Autônomo': {
-    Icone: PersonRoundedIcon,
-    cor: '#DB2777',
-    descricao: 'Pagamentos a pessoas identificadas por CPF: autônomos e prestadores individuais.',
-  },
-};
 
-const PADRAO = {
-  Icone: AccountBalanceRoundedIcon,
-  cor: '#64748B',
-  descricao: 'Despesa pública sem categoria identificada.',
-};
+// Token MD3 "emphasized decelerate" — o mesmo das barras
+const MD3_DESACELERAR = 'cubic-bezier(0.05, 0.7, 0.1, 1.0)';
+
+// ─── Rosca: a mesma divisão da lista, de relance ─────────────────────────────
+// Decorativa (aria-hidden): nome, percentual e valor estão sempre na lista.
+// Cada fatia é um círculo com stroke-dasharray — só CSS, sem biblioteca.
+const RAIO = 80;
+const CIRCUNFERENCIA = 2 * Math.PI * RAIO;
+
+function Rosca({ itens, animado, ativo, aoAtivar, totalPositivo }) {
+  let acumulado = 0;
+  const fatias = itens.map((item, i) => {
+    const pct = Math.max(Number(item.percentual) || 0, 0);
+    const inicio = acumulado;
+    acumulado += pct;
+    const comprimento = Math.max((pct / 100) * CIRCUNFERENCIA - (pct > 1 ? 2 : 0), 0);
+    return { item, i, pct, inicio, comprimento };
+  });
+
+  const destaque = ativo != null ? itens[ativo] : null;
+
+  return (
+    <Box sx={{ position: 'relative', width: '100%', maxWidth: 260, aspectRatio: '1 / 1', mx: 'auto' }}>
+      <Box component="svg" viewBox="0 0 200 200" aria-hidden="true" sx={{ width: '100%', height: '100%', display: 'block' }}>
+        <circle cx="100" cy="100" r={RAIO} fill="none" stroke="#EEF1F4" strokeWidth="26" />
+        {fatias.map(({ item, i, pct, inicio, comprimento }) =>
+          pct > 0 ? (
+            <circle
+              key={item.nome}
+              cx="100"
+              cy="100"
+              r={RAIO}
+              fill="none"
+              stroke={(CATEGORIA[item.nome] || PADRAO).cor}
+              strokeWidth={ativo === i ? 32 : 26}
+              strokeDasharray={`${animado ? comprimento : 0} ${CIRCUNFERENCIA}`}
+              strokeDashoffset={-(inicio / 100) * CIRCUNFERENCIA}
+              transform="rotate(-90 100 100)"
+              opacity={ativo == null || ativo === i ? 1 : 0.3}
+              onMouseEnter={() => aoAtivar(i)}
+              onMouseLeave={() => aoAtivar(null)}
+              style={{
+                cursor: 'pointer',
+                transition: `stroke-dasharray 0.9s ${MD3_DESACELERAR} ${0.05 * i}s, stroke-width 0.2s ease, opacity 0.2s ease`,
+              }}
+            />
+          ) : null,
+        )}
+      </Box>
+
+      {/* Centro: o total, ou a área em destaque */}
+      <Box
+        aria-hidden="true"
+        sx={{
+          position: 'absolute',
+          inset: '22%',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          textAlign: 'center',
+          pointerEvents: 'none',
+        }}
+      >
+        {destaque ? (
+          <>
+            <Typography sx={{ fontSize: '1.5rem', fontWeight: 800, lineHeight: 1.1, color: (CATEGORIA[destaque.nome] || PADRAO).cor, fontVariantNumeric: 'tabular-nums' }}>
+              {formatarPercentual(destaque.percentual)}
+            </Typography>
+            <Typography sx={{ mt: 0.5, fontSize: '0.75rem', fontWeight: 600, lineHeight: 1.25, color: 'text.secondary', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+              {destaque.nome}
+            </Typography>
+          </>
+        ) : (
+          <>
+            <Typography sx={{ fontSize: '0.75rem', fontWeight: 600, color: 'text.secondary' }}>Total pago</Typography>
+            <Typography sx={{ fontSize: '1.25rem', fontWeight: 800, lineHeight: 1.15, color: 'text.primary', fontVariantNumeric: 'tabular-nums' }}>
+              {formatarMoedaExtenso(totalPositivo)}
+            </Typography>
+            <Typography sx={{ fontSize: '0.75rem', color: 'text.secondary' }}>em {itens.length} áreas</Typography>
+          </>
+        )}
+      </Box>
+    </Box>
+  );
+}
 
 // ─── Linha da categoria ──────────────────────────────────────────────────────
-function LinhaCategoria({ item, animado }) {
+function LinhaCategoria({ item, animado, indice, ativo, aoAtivar }) {
   const { Icone, cor } = CATEGORIA[item.nome] || PADRAO;
   const percentual = Number(item.percentual) || 0;
   const largura = animado ? Math.min(Math.max(percentual, 0), 100) : 0;
+  const realcada = ativo === indice;
+  const apagada = ativo != null && !realcada;
 
   return (
-    <Box component="li" sx={{ py: { xs: 1.75, sm: 2 }, listStyle: 'none' }}>
+    <Box
+      component="li"
+      onMouseEnter={() => aoAtivar(indice)}
+      onMouseLeave={() => aoAtivar(null)}
+      onClick={() => aoAtivar(realcada ? null : indice)}
+      sx={{
+        py: { xs: 1.75, sm: 2 },
+        px: 1,
+        mx: -1,
+        borderRadius: '12px',
+        listStyle: 'none',
+        cursor: 'pointer',
+        bgcolor: realcada ? `${cor}0F` : 'transparent',
+        opacity: apagada ? 0.55 : 1,
+        transition: 'background-color 0.2s ease, opacity 0.2s ease',
+      }}
+    >
       <Stack direction="row" spacing={{ xs: 1.5, sm: 2 }} alignItems="flex-start">
         <Box
           aria-hidden
@@ -175,9 +205,12 @@ function LinhaCategoria({ item, animado }) {
 export default function GraficoDestino({ distribuicao }) {
   // Anima as barras a partir de 0 a cada nova consulta
   const [animado, setAnimado] = useState(false);
+  // Área em destaque (mouse ou toque) — sincroniza rosca e lista
+  const [ativo, setAtivo] = useState(null);
 
   useEffect(() => {
     setAnimado(false);
+    setAtivo(null);
     const t = setTimeout(() => setAnimado(true), 80);
     return () => clearTimeout(t);
   }, [distribuicao]);
@@ -217,25 +250,44 @@ export default function GraficoDestino({ distribuicao }) {
           <Box component="strong" sx={{ color: 'text.primary', whiteSpace: 'nowrap' }}>
             {formatarPercentual(maior.percentual)}
           </Box>{' '}
-          do total ({formatarMoedaExtenso(maior.valor)}).
+          do valor pago no mês ({formatarMoedaExtenso(maior.valor)}).
         </Typography>
 
         <Box
-          component="ol"
-          aria-label="Distribuição do dinheiro por área, da maior para a menor"
           sx={{
-            m: 0,
-            mt: 2,
-            p: 0,
-            '& > li + li': { borderTop: '1px solid', borderColor: 'divider' },
+            mt: 2.5,
+            display: 'grid',
+            gridTemplateColumns: { xs: 'minmax(0, 1fr)', md: '260px minmax(0, 1fr)' },
+            gap: { xs: 2.5, md: 4 },
+            alignItems: 'start',
           }}
         >
-          {distribuicao.map((item) => (
-            <LinhaCategoria key={item.nome} item={item} animado={animado} />
-          ))}
+          {/* No desktop a rosca acompanha a rolagem da lista */}
+          <Box sx={{ position: { md: 'sticky' }, top: { md: 96 }, maxWidth: { xs: 240, md: 'none' }, width: '100%', mx: 'auto' }}>
+            <Rosca itens={distribuicao} animado={animado} ativo={ativo} aoAtivar={setAtivo} totalPositivo={totalPositivo} />
+          </Box>
+
+          <Box
+            component="ol"
+            aria-label="Distribuição do dinheiro por área, da maior para a menor"
+            sx={{
+              m: 0,
+              p: 0,
+              minWidth: 0,
+              '& > li + li': { borderTop: '1px solid', borderColor: 'divider' },
+            }}
+          >
+            {distribuicao.map((item, i) => (
+              <LinhaCategoria key={item.nome} item={item} animado={animado} indice={i} ativo={ativo} aoAtivar={setAtivo} />
+            ))}
+          </Box>
         </Box>
 
         <ExplicacaoCidada rotulo="Como as áreas são definidas">
+          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, mb: 1.5 }}>
+            A divisão usa os <strong>pagamentos do mês</strong>: o dinheiro que de fato saiu do caixa.
+            Cada pagamento é contado uma vez só.
+          </Typography>
           {temDadoOficial ? (
             <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, mb: 1.5 }}>
               Cada empresa é classificada pela sua <strong>atividade oficial registrada na Receita

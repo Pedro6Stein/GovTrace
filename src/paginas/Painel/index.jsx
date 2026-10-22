@@ -6,7 +6,6 @@ import {
   Container,
   Fade,
   Paper,
-  Skeleton,
   Stack,
   Tab,
   Tabs,
@@ -27,11 +26,12 @@ import Cabecalho from '../../componentes/Cabecalho';
 import ContornoErro from '../../componentes/ContornoErro';
 import Rodape from '../../componentes/Rodape';
 import SeletorPeriodo from '../../componentes/SeletorPeriodo';
-import SkeletonPainel from '../../componentes/SkeletonPainel';
+import CarregamentoGovTrace from '../../componentes/CarregamentoGovTrace';
 
 // Aba 1 — "A Cidade"
 import HeroCidade from '../../componentes/abaCidade/HeroCidade';
 import GraficoDestino from '../../componentes/abaCidade/GraficoDestino';
+import CartaoConcentracao from '../../componentes/abaCidade/CartaoConcentracao';
 
 // Aba 2 — "Exploração"
 import RankingFornecedores from '../../componentes/abaExploracao/RankingFornecedores';
@@ -224,12 +224,9 @@ export default function Painel() {
 
     if (carregando) {
       return (
-        <Box role="status" aria-live="polite" sx={{ py: 1 }}>
-          <Typography sx={{ mb: 2, color: 'text.secondary', fontSize: '1rem' }}>
-            Consultando os dados oficiais de <strong>{filtros.municipio}</strong>… isso pode levar alguns segundos.
-          </Typography>
-          <SkeletonPainel />
-        </Box>
+        <CarregamentoGovTrace
+          titulo={`Consultando os dados oficiais de ${filtros.municipio}. Isso pode levar alguns segundos.`}
+        />
       );
     }
 
@@ -401,13 +398,7 @@ function PainelAba({ children, ativo, id, 'aria-labelledby': labelledBy }) {
 }
 
 function CarregandoLaboratorio() {
-  return (
-    <Stack spacing={2} role="status" aria-live="polite">
-      <Typography sx={{ color: 'text.secondary', fontSize: '1rem' }}>Preparando o Laboratório Matemático…</Typography>
-      <Skeleton variant="rounded" height={140} sx={{ borderRadius: '16px' }} />
-      <Skeleton variant="rounded" height={320} sx={{ borderRadius: '16px' }} />
-    </Stack>
-  );
+  return <CarregamentoGovTrace compacto titulo="Preparando o Laboratório Matemático" etapas={[]} />;
 }
 
 // ─── Componente auxiliar: conteúdo de cada aba ───────────────────────────────
@@ -416,7 +407,7 @@ function ConteudoAba({ id, props }) {
     case 'cidade':
       return (
         <Stack spacing={{ xs: 2.5, sm: 3 }}>
-          {/* Indicadores macro + concentração de mercado */}
+          {/* Painel de abertura: total do mês e números de apoio */}
           <HeroCidade
             totais={props.totais}
             concentracao={props.insights?.concentracao}
@@ -424,6 +415,8 @@ function ConteudoAba({ id, props }) {
           />
           {/* Distribuição por área social */}
           <GraficoDestino distribuicao={props.distribuicao} />
+          {/* Concentração nos 5 maiores (CR5) */}
+          {props.insights?.concentracao && <CartaoConcentracao concentracao={props.insights.concentracao} />}
         </Stack>
       );
 
@@ -432,6 +425,8 @@ function ConteudoAba({ id, props }) {
         <RankingFornecedores
           ranking={props.ranking}
           dadosBrutos={props.dadosBrutos}
+          totais={props.totais}
+          aoLocalizarEmpenho={props.aoLocalizarEmpenho}
         />
       );
 
@@ -456,6 +451,7 @@ function ConteudoAba({ id, props }) {
         <TabelaLancamentos
           despesas={props.dadosBrutos}
           empenhoEmFoco={props.empenhoEmFoco}
+          aoLocalizarEmpenho={props.aoLocalizarEmpenho}
           aoLimparEmpenho={props.aoLimparEmpenho}
         />
       );
