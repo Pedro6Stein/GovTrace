@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 
 import Palco from './Palco';
-import { CORES_PALCO as C, TEXTO_PALCO as T } from './coresPalco';
+import { CORES_PALCO as C, TEXTO_PALCO as T } from '../../../tema/coresPalco';
 import { formatarMoedaExtenso } from '../../../utilitarios/formatadores';
 
 const MotionRect = motion.rect;
@@ -12,7 +12,7 @@ const ALTURA = 280;
 const CORES_GRUPOS = [C.azul, C.amarelo, C.violeta, C.verde];
 
 /**
- * Cena da Recorrência de Lançamentos: cada bloco é um registro contábil.
+ * Cena da Recorrência de Lançamentos: cada bloco é um empenho.
  * Os blocos nascem na data real em que foram lançados (linha do tempo do
  * mês) e depois se reúnem em pilhas — uma por grupo de mesmo valor e mesmo
  * credor.
@@ -24,12 +24,12 @@ export default function CenaAgrupamento({ grupos }) {
   const descricao = grupos.length
     ? `Linha do tempo do mês com blocos coloridos. Os blocos de mesmo valor e mesmo credor se juntam em pilhas. Maiores grupos: ${grupos
         .slice(0, 4)
-        .map((g) => `${formatarMoedaExtenso(g.valor)} registrado ${g.repeticoes} vezes`)
+        .map((g) => `${formatarMoedaExtenso(g.valor)} em ${g.repeticoes} empenhos`)
         .join('; ')}.`
-    : 'Linha do tempo do mês. Nenhum valor se repetiu 5 vezes ou mais para o mesmo credor.';
+    : 'Linha do tempo do mês. Nenhum valor se repetiu em 5 empenhos ou mais do mesmo credor.';
 
   const legenda = grupos.length
-    ? [{ cor: C.azul, rotulo: 'Cada bloco é um registro contábil (cor = grupo)', forma: 'quadrado' }]
+    ? [{ cor: C.azul, rotulo: 'Cada bloco é um empenho (cor = grupo)', forma: 'quadrado' }]
     : [];
 
   return (
@@ -123,7 +123,7 @@ function Desenho({ largura: W, altura: H, ativo, reduzido, grupos }) {
               );
             })}
 
-            {/* Rótulo da pilha: valor repetido e quantidade de registros */}
+            {/* Rótulo da pilha: valor repetido e quantidade de empenhos */}
             <MotionG
               initial={reduzido ? false : { opacity: 0 }}
               animate={{ opacity: reunido ? 1 : 0 }}
@@ -133,7 +133,7 @@ function Desenho({ largura: W, altura: H, ativo, reduzido, grupos }) {
                 {formatarMoedaExtenso(grupo.valor)}
               </text>
               <text x={centroColuna(g)} y={base + 37} textAnchor="middle" fontSize={T.pequeno} fill={C.textoSuave}>
-                {grupo.repeticoes} registros
+                {grupo.repeticoes} empenhos
               </text>
             </MotionG>
           </g>
@@ -143,7 +143,7 @@ function Desenho({ largura: W, altura: H, ativo, reduzido, grupos }) {
       {!mostrados.length && (
         <text x={W / 2} y={(yLinha + base) / 2 + 20} textAnchor="middle" fontSize={T.medio} fill={C.texto}>
           <tspan x={W / 2}>Nenhum valor se repetiu</tspan>
-          <tspan x={W / 2} dy={18}>5 vezes ou mais para o mesmo credor</tspan>
+          <tspan x={W / 2} dy={18}>em 5 empenhos ou mais do mesmo credor</tspan>
         </text>
       )}
     </g>

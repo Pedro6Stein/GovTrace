@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 
 import Palco from './Palco';
-import { CORES_PALCO as C, TEXTO_PALCO as T } from './coresPalco';
+import { CORES_PALCO as C, TEXTO_PALCO as T } from '../../../tema/coresPalco';
 
 const MotionPath = motion.path;
 const MotionCircle = motion.circle;

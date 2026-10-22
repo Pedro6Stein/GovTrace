@@ -3,7 +3,7 @@ import { Chip, Stack } from '@mui/material';
 import { animate, motion, useMotionValue, useTransform } from 'framer-motion';
 
 import Palco from './Palco';
-import { CORES_PALCO as C, TEXTO_PALCO as T } from './coresPalco';
+import { CORES_PALCO as C, TEXTO_PALCO as T } from '../../../tema/coresPalco';
 import { formatarPercentual } from '../../../utilitarios/formatadores';
 
 const MotionG = motion.g;

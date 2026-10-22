@@ -29,9 +29,9 @@ export const MOTOR_CONFIG = {
     Icone: ScatterPlotRoundedIcon,
     cor: '#0284C7',
     fundo: '#EFF8FF',
-    pergunta: 'Algum lançamento ficou muito longe do valor típico do mês?',
+    pergunta: 'Algum empenho ficou muito longe do valor típico do mês?',
     descricaoMetodo:
-      'Calcula a média e o desvio padrão de todos os lançamentos válidos do período. Cada valor recebe um Z, que diz quantos desvios padrão ele está acima da média. Acima do limite (Z > 4), o lançamento é destacado como ponto de alta amplitude.',
+      'Calcula a média e o desvio padrão de todos os empenhos válidos do período. Cada empenho conta uma vez, mesmo passando por várias etapas (empenho, liquidação e pagamento). Cada valor recebe um Z, que diz quantos desvios padrão ele está acima da média. Acima do limite (Z > 4), o empenho é destacado como ponto de alta amplitude.',
   },
   fracionamento: {
     rotulo: 'Recorrência de Lançamentos',
@@ -39,9 +39,9 @@ export const MOTOR_CONFIG = {
     Icone: ViewModuleRoundedIcon,
     cor: '#B45309',
     fundo: '#FFFBEB',
-    pergunta: 'O mesmo valor apareceu muitas vezes para o mesmo credor?',
+    pergunta: 'O mesmo valor apareceu em muitos empenhos do mesmo credor?',
     descricaoMetodo:
-      'Agrupa os registros acima de R$ 500 por credor e por valor exato. Quando o mesmo valor aparece 5 vezes ou mais no período, o grupo é destacado. A contagem inclui as etapas contábeis (empenho, liquidação e pagamento) de cada documento.',
+      'Agrupa os empenhos acima de R$ 500 por credor e por valor exato. Quando o mesmo valor aparece em 5 empenhos ou mais no período, o grupo é destacado. Cada empenho conta uma vez, mesmo passando por várias etapas.',
   },
   monopolio: {
     rotulo: 'Concentração Setorial',
@@ -51,7 +51,7 @@ export const MOTOR_CONFIG = {
     fundo: '#F0FDF4',
     pergunta: 'Dentro de uma área, um único credor ficou com a maior parte do valor?',
     descricaoMetodo:
-      'Para cada área com mais de R$ 50 mil no período, calcula a fatia de cada credor. Quando um único credor fica com 50% ou mais do valor da área, a área é destacada.',
+      'Para cada área com mais de R$ 50 mil em empenhos no período, calcula a fatia de cada credor (cada empenho conta uma vez). Quando um único credor fica com 50% ou mais do valor da área, a área é destacada.',
   },
   concentracao: {
     rotulo: 'Índice CR5',
@@ -59,8 +59,8 @@ export const MOTOR_CONFIG = {
     Icone: GridViewRoundedIcon,
     cor: '#C98B22',
     fundo: '#FEFCE8',
-    pergunta: 'Quanto do dinheiro do mês foi para os 5 maiores credores?',
-    descricaoMetodo: `Soma o que os 5 maiores credores receberam e divide pelo total do período. Acima de ${LIMITE_CR5}%, a participação é destacada como elevada.`,
+    pergunta: 'Quanto do dinheiro pago no mês foi para os 5 maiores credores?',
+    descricaoMetodo: `Soma o que os 5 maiores credores receberam em pagamentos e divide pelo total pago no período. Acima de ${LIMITE_CR5}%, a participação é destacada como elevada.`,
   },
   benford: {
     rotulo: 'Lei de Newcomb-Benford',
@@ -90,10 +90,10 @@ export function extrairMetrica(tipo, dados) {
       if (!outliers) return { valor: '—', legenda: 'Poucos lançamentos para desenhar a curva' };
       const docs = empenhosDistintos(outliers);
       return {
-        valor: formatarInteiro(outliers.length),
-        legenda: outliers.length
-          ? `${plural(outliers.length, 'registro', 'registros')} de alta amplitude (Z > 4), em ${docs} ${plural(docs, 'empenho', 'empenhos')}`
-          : 'registros acima de Z = 4',
+        valor: formatarInteiro(docs),
+        legenda: docs
+          ? `${plural(docs, 'empenho', 'empenhos')} de alta amplitude (Z > 4)`
+          : 'empenhos acima de Z = 4',
       };
     }
     case 'fracionamento': {
@@ -101,7 +101,7 @@ export function extrairMetrica(tipo, dados) {
       if (!anomalias) return { valor: '—', legenda: 'Poucos lançamentos para comparar' };
       return {
         valor: formatarInteiro(anomalias.length),
-        legenda: `${plural(anomalias.length, 'grupo', 'grupos')} de mesmo valor e mesmo credor com 5 registros ou mais`,
+        legenda: `${plural(anomalias.length, 'grupo', 'grupos')} de mesmo valor e mesmo credor em 5 empenhos ou mais`,
       };
     }
     case 'monopolio': {
@@ -155,15 +155,15 @@ export function explicarCena(tipo, dados) {
     }
     case 'fracionamento': {
       const { anomalias } = dados;
-      const base = 'Cada bloquinho é um registro contábil. Os blocos começam espalhados pelos dias do mês e se juntam quando têm o mesmo valor e o mesmo credor.';
+      const base = 'Cada bloquinho é um empenho. Os blocos começam espalhados pelos dias do mês e se juntam quando têm o mesmo valor e o mesmo credor.';
       if (!anomalias) return ['Há poucos lançamentos no período para procurar repetições.'];
       return anomalias.length
         ? [
             base,
-            `Foram ${anomalias.length} ${plural(anomalias.length, 'grupo', 'grupos')} com o mesmo valor registrado 5 vezes ou mais.`,
-            'Repetir valores é comum em serviços mensais, aluguéis e parcelas. A contagem inclui cada etapa de um mesmo empenho (empenho, liquidação e pagamento), por isso mostramos também quantos empenhos diferentes há em cada grupo.',
+            `Foram ${anomalias.length} ${plural(anomalias.length, 'grupo', 'grupos')} com o mesmo valor em 5 empenhos ou mais.`,
+            'Repetir valores é comum em serviços mensais, aluguéis e parcelas. Cada empenho conta uma vez, mesmo passando por empenho, liquidação e pagamento.',
           ]
-        : [base, 'Nenhum valor se repetiu 5 vezes ou mais para o mesmo credor neste período.'];
+        : [base, 'Nenhum valor se repetiu em 5 empenhos ou mais do mesmo credor neste período.'];
     }
     case 'monopolio': {
       const areas = dados.departamentosDependentes;
@@ -181,7 +181,7 @@ export function explicarCena(tipo, dados) {
       if (dados.percentual == null) return ['Há poucos lançamentos no período para calcular a participação.'];
       const p = Math.round(Number(dados.percentual));
       return [
-        `Cada quadradinho representa R$ 1 de cada R$ 100 gastos no mês. Os quadradinhos coloridos mostram quanto foi para os 5 maiores credores: cerca de ${p} de cada 100.`,
+        `Cada quadradinho representa R$ 1 de cada R$ 100 pagos no mês. Os quadradinhos coloridos mostram quanto foi para os 5 maiores credores: cerca de ${p} de cada 100.`,
         dados.alerta
           ? `Passou da linha de referência de ${LIMITE_CR5} de 100: uma parte grande do dinheiro ficou com poucos credores.`
           : `Ficou abaixo da linha de referência de ${LIMITE_CR5} de 100: o dinheiro do mês foi dividido entre muitos credores.`,
@@ -220,8 +220,8 @@ export function resumoCompartilhavel(tipo, dados) {
     }
     case 'fracionamento': {
       const { anomalias } = dados;
-      if (!anomalias?.length) return 'Nenhum valor se repetiu 5 vezes ou mais para o mesmo credor neste período.';
-      return `${anomalias.length} ${plural(anomalias.length, 'grupo', 'grupos')} com o mesmo valor registrado 5 vezes ou mais para o mesmo credor. Repetir valores é comum em serviços mensais, aluguéis e parcelas.`;
+      if (!anomalias?.length) return 'Nenhum valor se repetiu em 5 empenhos ou mais do mesmo credor neste período.';
+      return `${anomalias.length} ${plural(anomalias.length, 'grupo', 'grupos')} com o mesmo valor em 5 empenhos ou mais do mesmo credor. Repetir valores é comum em serviços mensais, aluguéis e parcelas.`;
     }
     case 'monopolio': {
       const areas = dados.departamentosDependentes;
@@ -231,7 +231,7 @@ export function resumoCompartilhavel(tipo, dados) {
     }
     case 'concentracao':
       if (dados.percentual == null) return 'Poucos lançamentos no período para calcular a participação.';
-      return `De cada R$ 100 gastos no mês, cerca de R$ ${Math.round(Number(dados.percentual))} foram para os 5 maiores credores (referência: ${LIMITE_CR5}).`;
+      return `De cada R$ 100 pagos no mês, cerca de R$ ${Math.round(Number(dados.percentual))} foram para os 5 maiores credores (referência: ${LIMITE_CR5}).`;
     case 'benford':
       return explicarCena('benford', dados).slice(1).join(' ');
     default:

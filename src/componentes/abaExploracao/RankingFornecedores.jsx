@@ -1,412 +1,363 @@
-import { useState } from 'react';
-
+import { useEffect, useMemo, useState } from 'react';
 import {
   Box,
   Button,
+  ButtonBase,
   Card,
   CardContent,
   Chip,
-  Collapse,
-  Divider,
   IconButton,
+  InputAdornment,
   Stack,
-  Tooltip,
+  TextField,
   Typography,
 } from '@mui/material';
+import { keyframes } from '@emotion/react';
 
-import BusinessRoundedIcon from '@mui/icons-material/BusinessRounded';
-import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
-import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
+import ChevronRightRoundedIcon from '@mui/icons-material/ChevronRightRounded';
+import ClearRoundedIcon from '@mui/icons-material/ClearRounded';
+import ExpandMoreRoundedIcon from '@mui/icons-material/ExpandMoreRounded';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 
-import DrawerEvidencias from './DrawerEvidencias';
+import DrawerRegistros from './DrawerRegistros';
+import { iniciaisCredor, normalizarBusca } from './credor';
+import { configArea } from '../abaCidade/areas';
+import { formatarInteiro, formatarMoedaExtenso, formatarPercentual } from '../../utilitarios/formatadores';
 
 /**
- * RankingFornecedores — Aba 2 "Exploração"
+ * RankingFornecedores — aba "Exploração": quem mais recebeu no período.
  *
- * Lista os maiores fornecedores do período com expansão progressiva (Collapse)
- * e acesso ao DrawerEvidencias para drill-down de registros brutos.
+ * Organização pensada para o "teste da avó":
+ *   - um toque na linha abre os registros (antes eram dois: expandir + botão)
+ *   - busca pelo nome e filtro por área, para achar alguém sem rolar 500 linhas
+ *   - lista curta (20) que cresce sob demanda
  *
  * Props:
- *   ranking     Array<{ id, nome, valorTotal, quantidade }>
- *   dadosBrutos Despesa[] — para filtrar os lançamentos no Drawer
+ *   ranking             [{ id, nome, valorTotal, quantidade, atividade? }]
+ *   dadosBrutos         registros do período (para o painel de registros)
+ *   totais              { porEtapa.pago } — base da participação de cada um
+ *   aoLocalizarEmpenho  (documento) => abre a Base de Lançamentos filtrada
  */
 
-// ─── Formata valor monetário compacto ────────────────────────────────────────
-function fmtCompacto(v) {
-  if (v >= 1_000_000) return 'R$ ' + (v / 1_000_000).toFixed(2).replace('.', ',') + ' mi';
-  if (v >= 1_000) return 'R$ ' + (v / 1_000).toFixed(0) + ' mil';
-  return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-}
+const PASSO = 20;
 
-function fmtCompleto(v) {
-  return 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
+const subir = keyframes`
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
 
-// ─── Extrai os órgãos distintos de um fornecedor a partir de dadosBrutos ─────
-function extrairOrgaos(fornecedorId, dadosBrutos) {
-  const orgaos = new Set();
-  for (const d of dadosBrutos) {
-    if (d.fornecedorId === fornecedorId) orgaos.add(d.orgao);
-  }
-  return Array.from(orgaos);
-}
+// Ouro, prata e bronze para o pódio; os demais em cinza neutro
+const PODIO = {
+  1: { bg: '#C98B22', color: '#FFFFFF' },
+  2: { bg: '#94A3B8', color: '#FFFFFF' },
+  3: { bg: '#B45309', color: '#FFFFFF' },
+};
 
-// ─── Medalha de posição ───────────────────────────────────────────────────────
 function Posicao({ posicao }) {
-  const estilos = {
-    1: { bg: '#C98B22', color: '#FFFFFF', label: '1°' },
-    2: { bg: '#94A3B8', color: '#FFFFFF', label: '2°' },
-    3: { bg: '#B45309', color: '#FFFFFF', label: '3°' },
-  };
-  const s = estilos[posicao] || { bg: '#F1F3F4', color: '#64748B', label: `${posicao}°` };
-
+  const s = PODIO[posicao] ?? { bg: '#EEF1F4', color: '#475569' };
   return (
     <Box
-      sx={{
-        width: 32,
-        height: 32,
-        borderRadius: '8px',
-        bgcolor: s.bg,
-        color: s.color,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
-        fontWeight: 700,
-        fontSize: '0.75rem',
-        fontVariantNumeric: 'tabular-nums',
-      }}
+      aria-hidden
+      sx={{ width: 34, height: 34, borderRadius: '10px', bgcolor: s.bg, color: s.color, display: 'grid', placeItems: 'center', flexShrink: 0, fontWeight: 800, fontSize: '0.8125rem', fontVariantNumeric: 'tabular-nums' }}
     >
-      {s.label}
+      {posicao}º
     </Box>
   );
 }
 
-// ─── Item individual do ranking ───────────────────────────────────────────────
-function ItemFornecedor({ fornecedor, posicao, proporcao, dadosBrutos, onVerEvidencias }) {
-  const [expandido, setExpandido] = useState(false);
-
-  const orgaos = expandido ? extrairOrgaos(fornecedor.id, dadosBrutos) : [];
+function LinhaFornecedor({ fornecedor, posicao, proporcao, participacao, animado, ordemEntrada, aoAbrir }) {
+  const area = fornecedor.atividade?.area;
+  const { cor } = configArea(area);
 
   return (
-    <Box>
-      {/* ── Linha principal (sempre visível) ──────────────────────────── */}
-      <Box
-        onClick={() => setExpandido((v) => !v)}
+    <Box component="li" sx={{ listStyle: 'none', animation: ordemEntrada != null ? `${subir} 0.45s cubic-bezier(0.05, 0.7, 0.1, 1) ${ordemEntrada * 0.03}s both` : 'none' }}>
+      <ButtonBase
+        onClick={() => aoAbrir(fornecedor)}
+        aria-label={`${posicao}º lugar, ${fornecedor.nome}, ${formatarMoedaExtenso(fornecedor.valorTotal)}. Ver registros.`}
         sx={{
+          width: '100%',
+          textAlign: 'left',
           px: { xs: 2, sm: 3 },
-          py: 2,
-          cursor: 'pointer',
+          py: { xs: 1.75, sm: 2 },
+          display: 'flex',
+          alignItems: 'center',
+          gap: { xs: 1.5, sm: 2 },
           transition: 'background-color 0.15s ease',
-          '&:hover': { bgcolor: 'rgba(0,0,0,0.02)' },
-          WebkitTapHighlightColor: 'transparent',
+          '&:hover': { bgcolor: 'rgba(15,23,42,0.03)' },
+          '&:hover .seta': { transform: 'translateX(3px)', color: 'primary.main' },
         }}
-        role="button"
-        aria-expanded={expandido}
-        aria-label={`${expandido ? 'Recolher' : 'Expandir'} detalhes de ${fornecedor.nome}`}
       >
-        <Stack direction="row" spacing={2} alignItems="center">
-          {/* Posição */}
-          <Posicao posicao={posicao} />
+        <Posicao posicao={posicao} />
 
-          {/* Ícone corporativo */}
-          <Box
-            sx={{
-              width: 36,
-              height: 36,
-              borderRadius: '9px',
-              bgcolor: 'rgba(162,0,0,0.07)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}
+        <Box
+          aria-hidden
+          sx={{ display: { xs: 'none', sm: 'grid' }, width: 40, height: 40, borderRadius: '12px', bgcolor: `${cor}1A`, color: cor, fontWeight: 800, fontSize: '0.875rem', placeItems: 'center', flexShrink: 0 }}
+        >
+          {iniciaisCredor(fornecedor.nome)}
+        </Box>
+
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          {/* No celular o valor desce para baixo do nome: lado a lado, o nome
+              ficava espremido em pedaços de palavra */}
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            justifyContent="space-between"
+            alignItems={{ xs: 'flex-start', sm: 'baseline' }}
+            spacing={{ xs: 0.25, sm: 1.5 }}
           >
-            <BusinessRoundedIcon sx={{ fontSize: 18, color: 'primary.main' }} />
-          </Box>
-
-          {/* Nome + quantidade */}
-          <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography
-              variant="body2"
-              fontWeight={600}
-              color="text.primary"
-              sx={{
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
+              sx={{ fontSize: '0.9375rem', fontWeight: 700, color: 'text.primary', lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', overflowWrap: 'break-word' }}
             >
               {fornecedor.nome}
             </Typography>
-            <Typography variant="caption" color="text.secondary">
-              {fornecedor.quantidade} registro{fornecedor.quantidade !== 1 ? 's' : ''}
+            <Typography sx={{ fontSize: { xs: '1rem', sm: '1.0625rem' }, fontWeight: 800, color: 'text.primary', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', flexShrink: 0 }}>
+              {formatarMoedaExtenso(fornecedor.valorTotal)}
             </Typography>
-          </Box>
+          </Stack>
 
-          {/* Valor + barra de proporção */}
-          <Stack alignItems="flex-end" spacing={0.5} sx={{ flexShrink: 0 }}>
-            <Typography
-              sx={{
-                fontVariantNumeric: 'tabular-nums',
-                fontWeight: 700,
-                fontSize: { xs: '0.8125rem', sm: '0.9375rem' },
-                color: 'text.primary',
-              }}
-            >
-              {fmtCompacto(fornecedor.valorTotal)}
+          <Stack direction="row" alignItems="center" spacing={1} useFlexGap flexWrap="wrap" sx={{ mt: 0.5 }}>
+            {area && (
+              <Stack direction="row" spacing={0.5} alignItems="center" sx={{ minWidth: 0 }}>
+                <Box aria-hidden sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: cor, flexShrink: 0 }} />
+                <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary', fontWeight: 600 }}>{area}</Typography>
+              </Stack>
+            )}
+            <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary' }}>
+              {formatarInteiro(fornecedor.quantidade)} {fornecedor.quantidade === 1 ? 'pagamento' : 'pagamentos'}
+              {participacao != null && ` · ${formatarPercentual(participacao)} do valor pago`}
             </Typography>
+          </Stack>
 
-            {/* Mini-barra de proporção relativa ao maior fornecedor */}
+          {/* Barra relativa ao 1º colocado: compara os fornecedores entre si */}
+          <Box aria-hidden sx={{ mt: 1, height: 6, borderRadius: '3px', bgcolor: '#EEF1F4', overflow: 'hidden' }}>
             <Box
               sx={{
-                width: { xs: 60, sm: 80 },
-                height: 5,
-                bgcolor: '#F1F3F4',
+                height: '100%',
+                width: `${animado ? proporcao : 0}%`,
+                minWidth: animado && proporcao > 0 ? 4 : 0,
                 borderRadius: '3px',
-                overflow: 'hidden',
+                bgcolor: area ? cor : '#94A3B8',
+                transition: 'width 0.7s cubic-bezier(0.05, 0.7, 0.1, 1)',
               }}
-            >
-              <Box
-                sx={{
-                  height: '100%',
-                  width: `${proporcao}%`,
-                  bgcolor: posicao <= 3 ? 'primary.main' : '#94A3B8',
-                  borderRadius: '3px',
-                  opacity: 0.7,
-                }}
-              />
-            </Box>
-          </Stack>
-
-          {/* Chevron animado */}
-          <KeyboardArrowDownRoundedIcon
-            sx={{
-              color: 'text.disabled',
-              fontSize: 20,
-              flexShrink: 0,
-              transition: 'transform 0.25s ease',
-              transform: expandido ? 'rotate(180deg)' : 'rotate(0deg)',
-            }}
-          />
-        </Stack>
-      </Box>
-
-      {/* ── Painel de detalhes expandido (Collapse) ────────────────────── */}
-      <Collapse in={expandido} timeout={280} unmountOnExit>
-        <Box
-          sx={{
-            px: { xs: 2, sm: 3 },
-            pb: 2.5,
-            pt: 0.5,
-            bgcolor: '#FAFBFC',
-            borderTop: '1px dashed',
-            borderColor: 'divider',
-          }}
-        >
-          {/* Aviso de transparência obrigatório */}
-          <Stack
-            direction="row"
-            spacing={1}
-            alignItems="flex-start"
-            sx={{ mb: 2, mt: 1 }}
-          >
-            <InfoOutlinedIcon sx={{ fontSize: 15, color: 'text.disabled', mt: 0.1, flexShrink: 0 }} />
-            <Typography variant="caption" color="text.disabled" sx={{ lineHeight: 1.5 }}>
-              Valor registrado em despesas públicas oficiais.
-              A presença nesta lista <strong>não significa irregularidade</strong>.
-            </Typography>
-          </Stack>
-
-          {/* Valor total detalhado */}
-          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} alignItems={{ xs: 'flex-start', sm: 'center' }} sx={{ mb: 2 }}>
-            <Box sx={{ flex: 1 }}>
-              <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700 }}>
-                Total Acumulado no Período
-              </Typography>
-              <Typography
-                sx={{
-                  fontVariantNumeric: 'tabular-nums',
-                  fontWeight: 700,
-                  fontSize: '1.125rem',
-                  color: 'text.primary',
-                  mt: 0.25,
-                }}
-              >
-                {fmtCompleto(fornecedor.valorTotal)}
-              </Typography>
-            </Box>
-
-            {/* Botão de drill-down */}
-            <Button
-              variant="outlined"
-              color="primary"
-              size="small"
-              endIcon={<OpenInNewRoundedIcon fontSize="small" />}
-              onClick={(e) => {
-                e.stopPropagation();
-                onVerEvidencias(fornecedor);
-              }}
-              sx={{
-                flexShrink: 0,
-                boxShadow: 'none !important',
-                transform: 'none !important',
-                fontSize: '0.8125rem',
-                minHeight: '36px',
-              }}
-            >
-              Ver registros
-            </Button>
-          </Stack>
-
-          {/* Órgãos em que atuou */}
-          {orgaos.length > 0 && (
-            <Box>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                sx={{ textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700, display: 'block', mb: 1 }}
-              >
-                Departamentos atendidos
-              </Typography>
-              <Stack direction="row" flexWrap="wrap" gap={0.75} useFlexGap>
-                {orgaos.map((orgao) => (
-                  <Tooltip key={orgao} title={orgao} arrow enterTouchDelay={0}>
-                    <Chip
-                      label={orgao}
-                      size="small"
-                      sx={{
-                        maxWidth: 220,
-                        '& .MuiChip-label': {
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        },
-                        bgcolor: '#F1F3F4',
-                        color: 'text.secondary',
-                        fontSize: '0.6875rem',
-                        height: 24,
-                      }}
-                    />
-                  </Tooltip>
-                ))}
-              </Stack>
-            </Box>
-          )}
+            />
+          </Box>
         </Box>
-      </Collapse>
+
+        <ChevronRightRoundedIcon className="seta" aria-hidden sx={{ color: 'text.disabled', flexShrink: 0, transition: 'transform 0.2s ease, color 0.2s ease' }} />
+      </ButtonBase>
     </Box>
   );
 }
 
-// ─── Componente principal ─────────────────────────────────────────────────────
-export default function RankingFornecedores({ ranking, dadosBrutos }) {
+export default function RankingFornecedores({ ranking, dadosBrutos, totais, aoLocalizarEmpenho }) {
+  const [busca, setBusca] = useState('');
+  const [area, setArea] = useState(null);
+  const [limite, setLimite] = useState(PASSO);
+  const [selecionado, setSelecionado] = useState(null);
   const [drawerAberto, setDrawerAberto] = useState(false);
-  const [fornecedorSelecionado, setFornecedorSelecionado] = useState(null);
+  const [animado, setAnimado] = useState(false);
 
-  if (!ranking || ranking.length === 0) return null;
+  // Barras crescem a partir de zero a cada nova consulta
+  useEffect(() => {
+    setAnimado(false);
+    const t = setTimeout(() => setAnimado(true), 80);
+    return () => clearTimeout(t);
+  }, [ranking]);
 
-  const abrirDrawer = (fornecedor) => {
-    setFornecedorSelecionado(fornecedor);
+  // Áreas presentes no ranking (só credores classificados pelo CNAE), da mais comum para a menos
+  const areas = useMemo(() => {
+    const contagem = new Map();
+    for (const f of ranking ?? []) {
+      const a = f.atividade?.area;
+      if (a) contagem.set(a, (contagem.get(a) ?? 0) + 1);
+    }
+    return [...contagem.entries()].sort((a, b) => b[1] - a[1]);
+  }, [ranking]);
+
+  // Posição sempre a do ranking completo — filtrar não "promove" ninguém
+  const filtrados = useMemo(() => {
+    const termo = normalizarBusca(busca);
+    return (ranking ?? [])
+      .map((f, i) => ({ fornecedor: f, posicao: i + 1 }))
+      .filter(({ fornecedor }) => (!area || fornecedor.atividade?.area === area) && (!termo || normalizarBusca(fornecedor.nome).includes(termo)));
+  }, [ranking, busca, area]);
+
+  if (!ranking?.length) return null;
+
+  const maxValor = ranking[0].valorTotal || 1;
+  const totalPeriodo = totais?.porEtapa?.pago ?? totais?.valorTotal;
+  const visiveis = filtrados.slice(0, limite);
+  const restantes = filtrados.length - visiveis.length;
+
+  const abrir = (fornecedor) => {
+    setSelecionado(fornecedor);
     setDrawerAberto(true);
   };
-
-  const fecharDrawer = () => {
-    setDrawerAberto(false);
-    // Mantém o fornecedor por 300ms para não piscar durante a animação de fechar
-    setTimeout(() => setFornecedorSelecionado(null), 300);
+  const mudarBusca = (valor) => {
+    setBusca(valor);
+    setLimite(PASSO);
   };
-
-  // Valor máximo do ranking (para proporção das mini-barras)
-  const maxValor = ranking[0]?.valorTotal || 1;
-
-  // Limita ao top 20 para não sobrecarregar visualmente
-  const top = ranking.slice(0, 20);
+  const mudarArea = (valor) => {
+    setArea(valor);
+    setLimite(PASSO);
+  };
 
   return (
     <>
-      <Card elevation={1}>
+      <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', '&:hover': { transform: 'none', boxShadow: 'none' } }}>
         <CardContent sx={{ p: 0, '&:last-child': { pb: 0 } }}>
-          {/* Cabeçalho */}
-          <Box sx={{ px: { xs: 2, sm: 3 }, py: 2.5, borderBottom: '1px solid', borderColor: 'divider' }}>
-            <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={1}>
+          {/* ── Cabeçalho ───────────────────────────────────────────── */}
+          <Box sx={{ px: { xs: 2, sm: 3 }, pt: { xs: 2.5, sm: 3 }, pb: 2 }}>
+            <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} spacing={1.5}>
               <Box>
-                <Typography variant="h6" fontWeight={700} color="text.primary">
-                  Maiores Fornecedores do Período
+                <Typography component="h2" sx={{ fontSize: 'clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem)', fontWeight: 700, color: 'text.primary', lineHeight: 1.25 }}>
+                  Quem mais recebeu no período
                 </Typography>
-                <Typography variant="caption" color="text.secondary" sx={{ mt: 0.25, display: 'block' }}>
-                  Empresas privadas que mais receberam recursos. Entidades governamentais e bancárias são excluídas automaticamente.
+                <Typography sx={{ mt: 0.5, fontSize: '0.9375rem', color: 'text.secondary', lineHeight: 1.55 }}>
+                  Pelo valor pago no mês, do maior para o menor. Órgãos públicos, bancos e folha de pagamento ficam de fora.
+                  Toque em um nome para ver os registros oficiais.
                 </Typography>
               </Box>
               <Chip
-                label={`${top.length} empresas`}
-                size="small"
-                sx={{ bgcolor: 'rgba(162,0,0,0.08)', color: 'primary.main', fontWeight: 700, flexShrink: 0 }}
+                label={`${formatarInteiro(ranking.length)} fornecedores`}
+                sx={{ fontWeight: 700, bgcolor: 'rgba(162,0,0,0.08)', color: 'primary.main', flexShrink: 0 }}
               />
+            </Stack>
+
+            {/* ── Busca + filtro por área ───────────────────────────── */}
+            <TextField
+              value={busca}
+              onChange={(e) => mudarBusca(e.target.value)}
+              placeholder="Buscar fornecedor pelo nome"
+              fullWidth
+              size="small"
+              inputProps={{ 'aria-label': 'Buscar fornecedor pelo nome' }}
+              sx={{ mt: 2, '& .MuiOutlinedInput-root': { borderRadius: '12px', bgcolor: 'background.default' } }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchRoundedIcon sx={{ color: 'text.secondary' }} />
+                  </InputAdornment>
+                ),
+                endAdornment: busca ? (
+                  <InputAdornment position="end">
+                    <IconButton size="small" onClick={() => mudarBusca('')} aria-label="Limpar busca">
+                      <ClearRoundedIcon fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ) : null,
+              }}
+            />
+
+            {areas.length > 0 && (
+              <Stack
+                direction="row"
+                spacing={0.75}
+                role="group"
+                aria-label="Filtrar por área"
+                sx={{
+                  mt: 1.5,
+                  flexWrap: { xs: 'nowrap', md: 'wrap' },
+                  rowGap: 0.75,
+                  overflowX: { xs: 'auto', md: 'visible' },
+                  pb: { xs: 0.5, md: 0 },
+                  mx: { xs: -2, sm: 0 },
+                  px: { xs: 2, sm: 0 },
+                  scrollbarWidth: 'none',
+                  '&::-webkit-scrollbar': { display: 'none' },
+                }}
+              >
+                <Chip
+                  label="Todas as áreas"
+                  onClick={() => mudarArea(null)}
+                  aria-pressed={!area}
+                  color={!area ? 'primary' : 'default'}
+                  variant={!area ? 'filled' : 'outlined'}
+                  sx={{ fontWeight: 600, flexShrink: 0 }}
+                />
+                {areas.map(([nome, qtd]) => {
+                  const ativo = area === nome;
+                  const { cor } = configArea(nome);
+                  return (
+                    <Chip
+                      key={nome}
+                      label={`${nome} (${qtd})`}
+                      onClick={() => mudarArea(ativo ? null : nome)}
+                      aria-pressed={ativo}
+                      variant={ativo ? 'filled' : 'outlined'}
+                      icon={<Box component="span" aria-hidden sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: ativo ? '#FFFFFF' : cor, ml: '10px !important' }} />}
+                      sx={{ fontWeight: 600, flexShrink: 0, ...(ativo && { bgcolor: cor, color: '#FFFFFF', '&:hover': { bgcolor: cor } }) }}
+                    />
+                  );
+                })}
+              </Stack>
+            )}
+
+            <Stack direction="row" spacing={0.75} alignItems="flex-start" sx={{ mt: 1.75 }}>
+              <InfoOutlinedIcon aria-hidden sx={{ fontSize: 16, color: 'text.secondary', mt: 0.2 }} />
+              <Typography sx={{ fontSize: '0.8125rem', color: 'text.secondary', lineHeight: 1.5 }}>
+                Estar nesta lista mostra só quem recebeu recursos, <strong>não significa irregularidade</strong>.
+              </Typography>
             </Stack>
           </Box>
 
-          {/* Cabeçalho de colunas — desktop */}
-          <Box
-            sx={{
-              display: { xs: 'none', sm: 'grid' },
-              gridTemplateColumns: '32px 36px 1fr auto 80px 20px',
-              gap: 2,
-              px: 3,
-              py: 1,
-              bgcolor: '#FAFBFC',
-              borderBottom: '1px solid',
-              borderColor: 'divider',
-            }}
-          >
-            {['', '', 'Razão social', 'Total recebido', '', ''].map((h, i) => (
-              <Typography
-                key={i}
-                variant="caption"
-                color="text.disabled"
-                fontWeight={700}
-                textTransform="uppercase"
-                letterSpacing="0.05em"
-                noWrap
-              >
-                {h}
-              </Typography>
-            ))}
-          </Box>
-
-          {/* Lista de fornecedores */}
-          <Stack
-            divider={<Divider sx={{ mx: { xs: 2, sm: 3 } }} />}
-          >
-            {top.map((forn, idx) => (
-              <ItemFornecedor
-                key={forn.id}
-                fornecedor={forn}
-                posicao={idx + 1}
-                proporcao={(forn.valorTotal / maxValor) * 100}
-                dadosBrutos={dadosBrutos}
-                onVerEvidencias={abrirDrawer}
-              />
-            ))}
-          </Stack>
-
-          {/* Rodapé */}
-          {ranking.length > 20 && (
-            <Box sx={{ px: 3, py: 2, borderTop: '1px solid', borderColor: 'divider', bgcolor: '#FAFBFC' }}>
-              <Typography variant="caption" color="text.disabled">
-                Exibindo os 20 maiores de {ranking.length} fornecedores identificados no período.
+          {/* ── Lista ───────────────────────────────────────────────── */}
+          {visiveis.length === 0 ? (
+            <Box sx={{ px: 3, py: 6, textAlign: 'center', borderTop: '1px solid', borderColor: 'divider' }}>
+              <Typography sx={{ fontWeight: 700, color: 'text.primary' }}>Nenhum fornecedor encontrado</Typography>
+              <Typography sx={{ mt: 0.5, fontSize: '0.9375rem', color: 'text.secondary' }}>
+                Tente outro nome ou escolha "Todas as áreas".
               </Typography>
             </Box>
+          ) : (
+            <Box
+              component="ol"
+              aria-label="Fornecedores, do que mais recebeu para o que menos recebeu"
+              sx={{ m: 0, p: 0, borderTop: '1px solid', borderColor: 'divider', '& > li + li': { borderTop: '1px solid', borderColor: 'divider' } }}
+            >
+              {visiveis.map(({ fornecedor, posicao }, i) => (
+                <LinhaFornecedor
+                  key={fornecedor.id}
+                  fornecedor={fornecedor}
+                  posicao={posicao}
+                  proporcao={Math.max((fornecedor.valorTotal / maxValor) * 100, 0)}
+                  participacao={totalPeriodo > 0 ? (fornecedor.valorTotal / totalPeriodo) * 100 : null}
+                  animado={animado}
+                  ordemEntrada={i < PASSO ? i : null}
+                  aoAbrir={abrir}
+                />
+              ))}
+            </Box>
           )}
+
+          {/* ── Rodapé ──────────────────────────────────────────────── */}
+          <Stack
+            direction={{ xs: 'column', sm: 'row' }}
+            alignItems={{ xs: 'stretch', sm: 'center' }}
+            justifyContent="space-between"
+            spacing={1}
+            sx={{ px: { xs: 2, sm: 3 }, py: 1.75, borderTop: '1px solid', borderColor: 'divider', bgcolor: '#FAFBFC' }}
+          >
+            <Typography sx={{ fontSize: '0.875rem', color: 'text.secondary' }}>
+              Mostrando {formatarInteiro(visiveis.length)} de {formatarInteiro(filtrados.length)}
+              {filtrados.length !== ranking.length && ` (filtrado de ${formatarInteiro(ranking.length)})`}
+            </Typography>
+            {restantes > 0 && (
+              <Button onClick={() => setLimite((l) => l + PASSO)} endIcon={<ExpandMoreRoundedIcon />} sx={{ fontWeight: 600, minHeight: 40 }}>
+                Mostrar mais {Math.min(PASSO, restantes)}
+              </Button>
+            )}
+          </Stack>
         </CardContent>
       </Card>
 
-      {/* Drawer de drill-down */}
-      <DrawerEvidencias
+      <DrawerRegistros
         aberto={drawerAberto}
-        aoFechar={fecharDrawer}
-        fornecedor={fornecedorSelecionado}
+        aoFechar={() => setDrawerAberto(false)}
+        fornecedor={selecionado}
         despesas={dadosBrutos}
+        aoLocalizarEmpenho={aoLocalizarEmpenho}
       />
     </>
   );

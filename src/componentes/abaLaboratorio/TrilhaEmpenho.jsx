@@ -174,8 +174,8 @@ export default function TrilhaEmpenho({ tipo, trilha, acoes }) {
           renderizar={(g, i) => (
             <BlocoGrupo
               key={i}
-              titulo={`${formatarMoeda(g.valor)} registrado ${g.repeticoes} vezes`}
-              subtitulo={`Esses registros pertencem a ${g.empenhos.length} ${g.empenhos.length === 1 ? 'empenho' : 'empenhos'} (cada etapa conta como um registro).`}
+              titulo={`${formatarMoeda(g.valor)} em ${g.empenhos.length} empenhos`}
+              subtitulo="O mesmo valor, para o mesmo credor, no período:"
               identidade={g.identidade}
               empenhos={g.empenhos}
               acoes={acoes}
@@ -211,8 +211,8 @@ export default function TrilhaEmpenho({ tipo, trilha, acoes }) {
           renderizar={(c) => (
             <BlocoGrupo
               key={c.posicao}
-              titulo={`${c.posicao}º maior credor: ${formatarMoedaExtenso(c.valorTotal)}${c.participacao != null ? ` (${formatarPercentual(c.participacao)} do período)` : ''}`}
-              subtitulo={`${c.quantidade} ${c.quantidade === 1 ? 'registro' : 'registros'} no período. Maior empenho:`}
+              titulo={`${c.posicao}º maior credor: ${formatarMoedaExtenso(c.valorTotal)}${c.participacao != null ? ` (${formatarPercentual(c.participacao)} do valor pago)` : ''}`}
+              subtitulo={`${c.quantidade} ${c.quantidade === 1 ? 'pagamento' : 'pagamentos'} no período. Maior empenho:`}
               identidade={c.identidade}
               empenhos={c.empenhos}
               acoes={acoes}

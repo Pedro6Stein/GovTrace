@@ -32,7 +32,8 @@ const gravarCache = (chave, valor) => {
  * Busca a análise consolidada: { parametros, totais, distribuicao, ranking, insights, despesas }
  */
 export const buscarAnalise = async (municipio, ano, mes, { signal } = {}) => {
-  const chaveCache = `govtrace_analise_${municipio}_${ano}_${mes}`;
+  // v2: totais por etapa (sem dupla contagem) — invalida respostas no formato antigo
+  const chaveCache = `govtrace_analise_v2_${municipio}_${ano}_${mes}`;
 
   const emCache = lerCache(chaveCache);
   if (emCache) return emCache;

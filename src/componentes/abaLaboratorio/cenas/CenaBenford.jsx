@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 
 import Palco from './Palco';
-import { CORES_PALCO as C, TEXTO_PALCO as T } from './coresPalco';
+import { CORES_PALCO as C, TEXTO_PALCO as T } from '../../../tema/coresPalco';
 import { formatarPercentual } from '../../../utilitarios/formatadores';
 
 const MotionPath = motion.path;

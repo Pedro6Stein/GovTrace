@@ -131,7 +131,8 @@ export function trilhaRecorrencia(dados, despesas, setores) {
         repeticoes: grupo.repeticoes,
         identidade: identidadeAnonima(credorPrincipal(registros), setores),
         empenhos,
-        dias: registros.map((r) => diaDoMes(r.data)),
+        // Um bloco por empenho (não por etapa), na data em que ele apareceu primeiro
+        dias: empenhos.map((e) => diaDoMes(e.data)),
       };
     })
     .sort((a, b) => b.repeticoes - a.repeticoes);
@@ -153,14 +154,14 @@ export function trilhaConcentracaoSetorial(dados, despesas, setores) {
 }
 
 /** CR5: o top 5 já traz o ID do credor — nenhum cruzamento por nome é necessário. */
-export function trilhaCR5(dados, despesas, valorTotal, setores) {
+export function trilhaCR5(dados, despesas, totalPago, setores) {
   return (dados?.top5 ?? []).map((credor, posicao) => {
     const registros = despesas.filter((d) => d.fornecedorId === credor.id && d.valor > 0);
     return {
       posicao: posicao + 1,
       valorTotal: credor.valorTotal,
       quantidade: credor.quantidade,
-      participacao: valorTotal > 0 ? (credor.valorTotal / valorTotal) * 100 : null,
+      participacao: totalPago > 0 ? (credor.valorTotal / totalPago) * 100 : null,
       identidade: identidadeAnonima(
         { fornecedorId: credor.id, ehPessoaJuridica: registros[0]?.ehPessoaJuridica },
         setores,

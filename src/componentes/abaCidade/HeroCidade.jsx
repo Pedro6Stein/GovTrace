@@ -1,16 +1,15 @@
-import { Box, Card, CardContent, Chip, Stack, Typography } from '@mui/material';
+import { Box, Stack, Typography } from '@mui/material';
+import { keyframes } from '@emotion/react';
 import { visuallyHidden } from '@mui/utils';
 
-import AccountBalanceWalletRoundedIcon from '@mui/icons-material/AccountBalanceWalletRounded';
-import CheckCircleRoundedIcon from '@mui/icons-material/CheckCircleRounded';
 import EventRoundedIcon from '@mui/icons-material/EventRounded';
 import PaymentsRoundedIcon from '@mui/icons-material/PaymentsRounded';
 import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded';
 import VerifiedRoundedIcon from '@mui/icons-material/VerifiedRounded';
-import InsightsRoundedIcon from '@mui/icons-material/InsightsRounded';
+import GroupsRoundedIcon from '@mui/icons-material/GroupsRounded';
 
 import ExplicacaoCidada from '../ExplicacaoCidada';
-import TermometroRisco, { descricaoTermometro } from '../TermometroRisco';
+import { CORES_PALCO as C } from '../../tema/coresPalco';
 import {
   formatarInteiro,
   formatarMoeda,
@@ -19,322 +18,337 @@ import {
   formatarPeriodo,
 } from '../../utilitarios/formatadores';
 import { formatarEmSalariosMinimos } from '../../utilitarios/traducaoCivica';
+import useContagem from '../../utilitarios/useContagem';
 
 /**
- * HeroCidade — Panorama financeiro do município (Aba "A Cidade")
+ * HeroCidade — painel de abertura da aba "A Cidade".
  *
- * Hierarquia de leitura pensada para leigos e idosos:
- *   1. Contexto   — de qual cidade e período estou falando?
- *   2. Número     — por extenso ("R$ 292,2 milhões"), grande e legível
- *   3. Prova      — o valor exato logo abaixo, para quem audita
- *   4. Explicação — sob demanda, em <ExplicacaoCidada>
+ * Mesma linguagem visual do Laboratório Matemático (quadro escuro com grade)
+ * para a página ter uma identidade só. Hierarquia de leitura:
+ *   1. Contexto  — cidade e período
+ *   2. Número    — o total empenhado no mês, grande, contando até o valor real
+ *   3. Escala    — o mesmo valor em salários mínimos
+ *   4. Etapas    — empenhado, liquidado e pago, lado a lado (nunca somados)
+ *   5. Apoio     — empenhos, maior valor único, participação dos 5 maiores
+ *   6. Explicação, sob demanda, logo abaixo do painel
+ *
+ * Só CSS + requestAnimationFrame: é a primeira tela depois do carregamento,
+ * não pode puxar o Framer Motion para o bundle inicial.
  *
  * Props:
- *   totais        { valorTotal, totalRegistros, maiorPagamento }
+ *   totais        { valorTotal, porEtapa, totalRegistros, totalEmpenhos, maiorPagamento }
  *   concentracao  insight CR5 da GovTrace API
  *   filtros       { municipio, ano, mes }
  */
 
-// Espelha PARAMETROS_ANALISE.CONCENTRACAO_CR5_ALERTA da GovTrace API
-const LIMITE_CR5 = 30;
+const subir = keyframes`
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
+const tracar = keyframes`
+  from { stroke-dashoffset: 1; }
+  to   { stroke-dashoffset: 0; }
+`;
 
-// Container query: os cards declaram "containerType: inline-size" e o
-// número escala pela largura DO CARD (cqi), não da janela. Assim o mesmo
-// componente fica proporcional em 1 coluna (celular) ou 3 (desktop) —
-// com "vw", o card estreito do desktop quebrava "R$ 292,2 milhões" em 2 linhas.
-const conteinerResponsivo = { containerType: 'inline-size' };
+// O mesmo dinheiro passa pelas três etapas: elas aparecem lado a lado, nunca somadas
+const ETAPAS = [
+  { chave: 'empenhado', rotulo: 'Empenhado', explicacao: 'reservado no orçamento', cor: C.azul },
+  { chave: 'liquidado', rotulo: 'Liquidado', explicacao: 'serviço ou produto confirmado', cor: C.violeta },
+  { chave: 'pago', rotulo: 'Pago', explicacao: 'saiu do caixa', cor: C.verde },
+];
 
-const estiloNumeroHeroi = {
-  fontSize: 'clamp(1.75rem, 9.5cqi, 2.5rem)',
-  '@supports not (font-size: 1cqi)': { fontSize: '2rem' },
-  fontWeight: 700,
-  lineHeight: 1.1,
-  letterSpacing: '-0.025em',
-  fontVariantNumeric: 'tabular-nums',
-  color: 'text.primary',
-  overflowWrap: 'anywhere',
+const entrada = (atraso) => ({ animation: `${subir} 0.6s cubic-bezier(0.05, 0.7, 0.1, 1) ${atraso}s both` });
+
+// Grade do "quadro" + dois brilhos suaves (vermelho institucional e âmbar)
+const fundoPalco = {
+  bgcolor: C.fundo,
+  backgroundImage: [
+    'radial-gradient(circle at 88% 0%, rgba(196,18,48,0.35), transparent 42%)',
+    'radial-gradient(circle at 0% 100%, rgba(255,209,102,0.12), transparent 45%)',
+    `linear-gradient(${C.grade} 1px, transparent 1px)`,
+    `linear-gradient(90deg, ${C.grade} 1px, transparent 1px)`,
+  ].join(', '),
+  backgroundSize: 'auto, auto, 28px 28px, 28px 28px',
 };
 
-// ─── Ícone em "pastilha" tonal ───────────────────────────────────────────────
-function Pastilha({ icone, cor }) {
+function Bloco({ icone, rotulo, children, atraso }) {
   const Icone = icone;
   return (
     <Box
-      aria-hidden
       sx={{
-        width: 44,
-        height: 44,
-        borderRadius: '12px',
-        bgcolor: `${cor}14`,
-        color: cor,
-        display: 'grid',
-        placeItems: 'center',
-        flexShrink: 0,
+        p: { xs: 2, sm: 2.25 },
+        borderRadius: '14px',
+        bgcolor: 'rgba(255,255,255,0.05)',
+        border: '1px solid rgba(255,255,255,0.10)',
+        minWidth: 0,
+        ...entrada(atraso),
       }}
     >
-      <Icone sx={{ fontSize: 24 }} />
+      <Stack direction="row" spacing={1} alignItems="center" sx={{ color: C.textoSuave }}>
+        <Icone aria-hidden sx={{ fontSize: 18 }} />
+        <Typography component="h3" sx={{ fontSize: '0.8125rem', fontWeight: 600, letterSpacing: '0.02em', color: C.textoSuave }}>
+          {rotulo}
+        </Typography>
+      </Stack>
+      <Box sx={{ mt: 1 }}>{children}</Box>
     </Box>
   );
 }
 
-// ─── Cartão de indicador (KPI) ───────────────────────────────────────────────
-function CartaoIndicador({ id, rotulo, Icone, cor, valor, valorAcessivel, complemento, explicacao }) {
+function FaixaEtapas({ porEtapa }) {
   return (
-    <Card component="article" aria-labelledby={`${id}-rotulo`} sx={{ minWidth: 0 }}>
-      <CardContent sx={{ ...conteinerResponsivo, p: { xs: 2.5, sm: 3 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
-        <Stack direction="row" spacing={1.5} alignItems="center">
-          <Pastilha icone={Icone} cor={cor} />
-          <Typography
-            id={`${id}-rotulo`}
-            component="h3"
-            sx={{ fontSize: '0.9375rem', fontWeight: 600, color: 'text.secondary', lineHeight: 1.3 }}
+    <Box component="section" aria-labelledby="titulo-etapas" sx={{ position: 'relative', mt: { xs: 3, sm: 3.5 }, ...entrada(0.25) }}>
+      <Typography id="titulo-etapas" component="h3" sx={{ fontSize: '0.8125rem', fontWeight: 600, letterSpacing: '0.02em', color: C.textoSuave }}>
+        O caminho do dinheiro no mês
+      </Typography>
+      <Box
+        component="ol"
+        sx={{
+          listStyle: 'none',
+          p: 0,
+          m: 0,
+          mt: 1,
+          display: 'grid',
+          gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: 'repeat(3, minmax(0, 1fr))' },
+          gap: 1,
+        }}
+      >
+        {ETAPAS.map((etapa) => (
+          <Box
+            component="li"
+            key={etapa.chave}
+            sx={{
+              display: 'flex',
+              flexDirection: { xs: 'row', sm: 'column' },
+              alignItems: { xs: 'center', sm: 'flex-start' },
+              justifyContent: 'space-between',
+              gap: { xs: 1.5, sm: 0.25 },
+              px: 1.5,
+              py: 1.25,
+              borderRadius: '12px',
+              bgcolor: 'rgba(255,255,255,0.04)',
+              borderLeft: `3px solid ${etapa.cor}`,
+            }}
           >
-            {rotulo}
-          </Typography>
-        </Stack>
-
-        {/* Visual: forma abreviada. Leitor de tela: valor completo
-            (aria-label em <p> é proibido pelo ARIA 1.2 e seria ignorado) */}
-        <Typography component="p" sx={{ ...estiloNumeroHeroi, mt: 2 }}>
-          <span aria-hidden="true">{valor}</span>
-          <Box component="span" sx={visuallyHidden}>{valorAcessivel}</Box>
-        </Typography>
-
-        {complemento && (
-          <Box sx={{ mt: 1, color: 'text.secondary', fontSize: '0.9375rem', lineHeight: 1.5 }}>
-            {complemento}
-          </Box>
-        )}
-
-        {explicacao && (
-          <ExplicacaoCidada>
-            <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
-              {explicacao}
+            <Box sx={{ minWidth: 0 }}>
+              <Typography component="p" sx={{ fontSize: '0.875rem', fontWeight: 700, color: etapa.cor }}>
+                {etapa.rotulo}
+              </Typography>
+              <Typography component="p" sx={{ fontSize: '0.8125rem', color: C.textoSuave, lineHeight: 1.35 }}>
+                {etapa.explicacao}
+              </Typography>
+            </Box>
+            <Typography
+              component="p"
+              title={formatarMoeda(porEtapa[etapa.chave] ?? 0)}
+              sx={{ fontSize: '1.125rem', fontWeight: 700, color: '#F8FAFC', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap', mt: { sm: 0.75 } }}
+            >
+              {formatarMoedaExtenso(porEtapa[etapa.chave] ?? 0)}
             </Typography>
-          </ExplicacaoCidada>
-        )}
-      </CardContent>
-    </Card>
+          </Box>
+        ))}
+      </Box>
+    </Box>
   );
 }
 
-// ─── Cartão de concentração de mercado (CR5) ─────────────────────────────────
-function CartaoConcentracao({ concentracao }) {
-  const { alerta, percentual, somaTop5, insightEducativo } = concentracao;
-  const temPercentual = percentual !== undefined && Number.isFinite(Number(percentual));
+export default function HeroCidade({ totais, concentracao, filtros }) {
+  const valorTotal = totais?.valorTotal ?? 0;
+  const valorAnimado = useContagem(valorTotal);
 
-  const status = alerta
-    ? { rotulo: 'Destaque estatístico', Icone: InsightsRoundedIcon, cor: '#B45309', fundo: '#FFFBEB', borda: '#FCD34D' }
-    : { rotulo: 'Dentro do esperado', Icone: CheckCircleRoundedIcon, cor: '#15803D', fundo: '#F0FDF4', borda: '#86EFAC' };
+  if (!totais) return null;
+
+  const { porEtapa, totalRegistros, totalEmpenhos, maiorPagamento } = totais;
+  const temMaiorPagamento = maiorPagamento?.valor > 0;
+  const temCR5 = concentracao?.percentual != null;
 
   return (
-    <Card
-      component="article"
-      aria-labelledby="indicador-cr5-rotulo"
-      sx={{ minWidth: 0, bgcolor: status.fundo, borderColor: status.borda, borderLeft: `6px solid ${status.cor}` }}
-    >
-      <CardContent sx={{ ...conteinerResponsivo, p: { xs: 2.5, sm: 3 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+    <Box component="section" aria-labelledby="titulo-panorama">
+      <Box
+        sx={{
+          ...fundoPalco,
+          position: 'relative',
+          overflow: 'hidden',
+          borderRadius: '22px',
+          p: { xs: 2.5, sm: 4 },
+          color: C.texto,
+          boxShadow: '0 18px 40px -24px rgba(15,23,42,0.55)',
+        }}
+      >
+        {/* Rastro decorativo: a mesma linha da logo, desenhada ao abrir */}
+        <Box
+          component="svg"
+          aria-hidden="true"
+          viewBox="0 0 400 120"
+          preserveAspectRatio="none"
+          // Ao lado do número (área livre), nunca atrás dos blocos de texto
+          sx={{ display: { xs: 'none', md: 'block' }, position: 'absolute', right: 32, top: 110, width: '42%', height: 120, opacity: 0.6, pointerEvents: 'none' }}
+        >
+          <Box
+            component="path"
+            d="M0 92 H120 L150 70 L180 104 L210 54 L240 84 L268 76 H400"
+            pathLength="1"
+            fill="none"
+            stroke={C.amarelo}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            sx={{ strokeDasharray: 1, strokeDashoffset: 1, animation: `${tracar} 1.6s cubic-bezier(0.65, 0, 0.35, 1) 0.3s both` }}
+          />
+        </Box>
+
+        {/* ── Contexto ─────────────────────────────────────────────────── */}
         <Stack
           direction={{ xs: 'column', sm: 'row' }}
           spacing={{ xs: 1.5, sm: 2 }}
           justifyContent="space-between"
           alignItems={{ xs: 'flex-start', sm: 'center' }}
+          sx={{ position: 'relative', ...entrada(0) }}
         >
-          <Typography
-            id="indicador-cr5-rotulo"
-            component="h3"
-            sx={{ fontSize: '1.0625rem', fontWeight: 700, color: 'text.primary' }}
+          <Box sx={{ minWidth: 0 }}>
+            <Typography
+              id="titulo-panorama"
+              component="h2"
+              sx={{ fontSize: 'clamp(1.375rem, 1.2rem + 0.8vw, 1.875rem)', fontWeight: 700, lineHeight: 1.2, color: '#F8FAFC' }}
+            >
+              Panorama de {filtros?.municipio}
+            </Typography>
+            {filtros?.mes && (
+              <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mt: 0.75, color: C.textoSuave }}>
+                <EventRoundedIcon aria-hidden sx={{ fontSize: 19 }} />
+                <Typography sx={{ fontSize: '1rem', '&::first-letter': { textTransform: 'uppercase' } }}>
+                  {formatarPeriodo(filtros.mes, filtros.ano)}
+                </Typography>
+              </Stack>
+            )}
+          </Box>
+          <Stack
+            direction="row"
+            spacing={0.75}
+            alignItems="center"
+            sx={{ px: 1.5, py: 0.75, borderRadius: '999px', border: '1px solid rgba(255,255,255,0.18)', bgcolor: 'rgba(255,255,255,0.06)', flexShrink: 0 }}
           >
-            Concentração de mercado
-          </Typography>
-          {/* Status em texto + ícone (nunca só cor — WCAG 1.4.1) */}
-          <Chip
-            icon={<status.Icone />}
-            label={status.rotulo}
-            sx={{
-              height: 32,
-              fontSize: '0.875rem',
-              fontWeight: 600,
-              color: status.cor,
-              bgcolor: '#FFFFFF',
-              border: `1px solid ${status.borda}`,
-              '& .MuiChip-icon': { color: status.cor },
-            }}
-          />
+            <VerifiedRoundedIcon aria-hidden sx={{ fontSize: 17, color: C.verde }} />
+            <Typography sx={{ fontSize: '0.8125rem', fontWeight: 600, color: C.texto, whiteSpace: 'nowrap' }}>
+              Dados oficiais do TCE-SP
+            </Typography>
+          </Stack>
         </Stack>
 
-        {temPercentual ? (
-          <>
-            <Stack
-              direction={{ xs: 'column', sm: 'row' }}
-              spacing={{ xs: 0.5, sm: 2 }}
-              alignItems={{ xs: 'flex-start', sm: 'baseline' }}
-              sx={{ mt: 2 }}
-            >
-              <Typography component="p" sx={{ ...estiloNumeroHeroi, color: status.cor, whiteSpace: 'nowrap', flexShrink: 0 }}>
-                {formatarPercentual(percentual)}
-              </Typography>
-              <Typography sx={{ fontSize: '1rem', color: 'text.secondary', lineHeight: 1.5 }}>
-                do dinheiro do período foi para os <strong>5 maiores fornecedores</strong>
-                {somaTop5 ? ` (${formatarMoedaExtenso(somaTop5)})` : ''}.
-              </Typography>
-            </Stack>
-
-            <TermometroRisco
-              percentual={Number(percentual)}
-              limite={LIMITE_CR5}
-              cor={status.cor}
-              rotuloUnidade={`Limite ${LIMITE_CR5}%`}
-              descricao={descricaoTermometro(percentual, LIMITE_CR5, 'dos recursos concentrados nos 5 maiores fornecedores')}
-            />
-
-            <ExplicacaoCidada>
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, mb: 1.5 }}>
-                {insightEducativo}
-              </Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.6 }}>
-                <strong>Método (CR5):</strong> soma o que os 5 maiores fornecedores receberam e divide
-                pelo total do período. Acima de {LIMITE_CR5}%, o município depende muito de poucas
-                empresas. Isso é um destaque estatístico, não um juízo de valor.
-              </Typography>
-            </ExplicacaoCidada>
-          </>
-        ) : (
-          <Typography sx={{ mt: 2, color: 'text.secondary' }}>{insightEducativo}</Typography>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
-
-// ─── Componente principal ────────────────────────────────────────────────────
-export default function HeroCidade({ totais, concentracao, filtros }) {
-  if (!totais) return null;
-
-  const { valorTotal, totalRegistros, maiorPagamento } = totais;
-  const temMaiorPagamento = maiorPagamento?.valor > 0 && Boolean(maiorPagamento?.fornecedorNome);
-
-  return (
-    <Box component="section" aria-labelledby="titulo-panorama">
-      {/* ── Contexto: o que o cidadão está vendo ─────────────────────────── */}
-      <Stack
-        direction={{ xs: 'column', sm: 'row' }}
-        spacing={{ xs: 1.25, sm: 2 }}
-        justifyContent="space-between"
-        alignItems={{ xs: 'flex-start', sm: 'flex-end' }}
-        sx={{ mb: { xs: 2, sm: 2.5 } }}
-      >
-        <Box sx={{ minWidth: 0 }}>
-          <Typography
-            id="titulo-panorama"
-            component="h2"
-            sx={{ fontSize: 'clamp(1.375rem, 1.2rem + 0.8vw, 1.75rem)', fontWeight: 700, lineHeight: 1.2, color: 'text.primary' }}
-          >
-            Panorama de {filtros?.municipio}
+        {/* ── O número do mês ──────────────────────────────────────────── */}
+        <Box sx={{ position: 'relative', mt: { xs: 3, sm: 4 }, ...entrada(0.15) }}>
+          <Typography component="h3" sx={{ fontSize: '0.8125rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: C.textoSuave }}>
+            Total empenhado no mês
           </Typography>
-          {filtros?.mes && (
-            <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mt: 0.75, color: 'text.secondary' }}>
-              <EventRoundedIcon aria-hidden sx={{ fontSize: 20 }} />
-              <Typography sx={{ fontSize: '1rem', '&::first-letter': { textTransform: 'uppercase' } }}>
-                {formatarPeriodo(filtros.mes, filtros.ano)}
+          <Typography
+            component="p"
+            sx={{
+              mt: 0.5,
+              fontSize: 'clamp(2.25rem, 1.6rem + 3.2vw, 3.75rem)',
+              fontWeight: 800,
+              lineHeight: 1.05,
+              letterSpacing: '-0.03em',
+              fontVariantNumeric: 'tabular-nums',
+              color: '#F8FAFC',
+            }}
+          >
+            {/* Visual: contagem animada. Leitor de tela: valor exato, sem "contar" */}
+            <span aria-hidden="true">{formatarMoedaExtenso(valorAnimado)}</span>
+            <Box component="span" sx={visuallyHidden}>{formatarMoeda(valorTotal)}</Box>
+          </Typography>
+          <Typography sx={{ mt: 1, fontSize: '0.9375rem', color: C.textoSuave }}>
+            Valor exato:{' '}
+            <Box component="span" sx={{ fontWeight: 600, color: C.texto, fontVariantNumeric: 'tabular-nums' }}>
+              {formatarMoeda(valorTotal)}
+            </Box>
+          </Typography>
+          <Typography sx={{ mt: 0.5, fontSize: '0.9375rem', color: C.textoSuave }}>
+            Equivale a{' '}
+            <Box component="span" sx={{ fontWeight: 700, color: C.amarelo }}>
+              {formatarEmSalariosMinimos(valorTotal)}
+            </Box>
+          </Typography>
+        </Box>
+
+        {/* ── Etapas (só quando a API já separa por etapa) ─────────────── */}
+        {porEtapa && <FaixaEtapas porEtapa={porEtapa} />}
+
+        {/* ── Blocos de apoio ──────────────────────────────────────────── */}
+        <Box
+          sx={{
+            position: 'relative',
+            mt: { xs: 3, sm: 4 },
+            display: 'grid',
+            gridTemplateColumns: { xs: 'minmax(0, 1fr)', sm: 'repeat(2, minmax(0, 1fr))', md: 'repeat(3, minmax(0, 1fr))' },
+            gap: { xs: 1.5, sm: 2 },
+          }}
+        >
+          <Bloco icone={ReceiptLongRoundedIcon} rotulo={totalEmpenhos ? 'Empenhos no período' : 'Documentos analisados'} atraso={0.35}>
+            <Typography sx={{ fontSize: '1.625rem', fontWeight: 700, color: '#F8FAFC', fontVariantNumeric: 'tabular-nums', lineHeight: 1.15 }}>
+              {formatarInteiro(totalEmpenhos || totalRegistros)}
+            </Typography>
+            <Typography sx={{ mt: 0.5, fontSize: '0.875rem', color: C.textoSuave, lineHeight: 1.45 }}>
+              {totalEmpenhos
+                ? `Cada um contado uma vez, em ${formatarInteiro(totalRegistros)} registros oficiais do TCE-SP`
+                : 'Empenhos, liquidações, pagamentos e anulações publicados pelo TCE-SP'}
+            </Typography>
+          </Bloco>
+
+          {temMaiorPagamento && (
+            <Bloco icone={PaymentsRoundedIcon} rotulo="Maior valor único" atraso={0.45}>
+              <Typography sx={{ fontSize: '1.625rem', fontWeight: 700, color: '#F8FAFC', fontVariantNumeric: 'tabular-nums', lineHeight: 1.15 }}>
+                {formatarMoedaExtenso(maiorPagamento.valor)}
               </Typography>
-            </Stack>
+              <Typography sx={{ mt: 0.5, fontSize: '0.875rem', color: C.textoSuave, lineHeight: 1.45, overflowWrap: 'anywhere' }}>
+                {maiorPagamento.fornecedorNome && (
+                  <Box component="span" sx={{ display: 'block', color: C.texto, fontWeight: 600 }}>
+                    {maiorPagamento.fornecedorNome}
+                  </Box>
+                )}
+                {[maiorPagamento.data && `Em ${maiorPagamento.data}`, maiorPagamento.documento && `Doc. ${maiorPagamento.documento}`]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </Typography>
+            </Bloco>
+          )}
+
+          {temCR5 && (
+            <Bloco icone={GroupsRoundedIcon} rotulo="Com os 5 maiores fornecedores" atraso={0.55}>
+              <Typography sx={{ fontSize: '1.625rem', fontWeight: 700, color: concentracao.alerta ? C.amarelo : '#F8FAFC', fontVariantNumeric: 'tabular-nums', lineHeight: 1.15 }}>
+                {formatarPercentual(concentracao.percentual)}
+              </Typography>
+              <Typography sx={{ mt: 0.5, fontSize: '0.875rem', color: C.textoSuave, lineHeight: 1.45 }}>
+                do dinheiro pago no mês. Detalhes no fim desta página.
+              </Typography>
+            </Bloco>
           )}
         </Box>
-        <Chip
-          icon={<VerifiedRoundedIcon />}
-          label={<>Dados oficiais do <Box component="span" sx={{ whiteSpace: 'nowrap' }}>TCE-SP</Box></>}
-          variant="outlined"
-          sx={{ height: 32, fontSize: '0.8125rem', fontWeight: 600, color: 'text.secondary', borderColor: '#CBD5E1', bgcolor: 'background.paper' }}
-        />
-      </Stack>
-
-      {/* ── Indicadores: 1 coluna no celular, 2 no tablet, 3 no desktop ────
-          minmax(0, 1fr): a trilha pode encolher abaixo do conteúdo. Com "1fr"
-          puro, um texto longo alarga a coluna e estoura a tela. */}
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: {
-            xs: 'minmax(0, 1fr)',
-            sm: 'repeat(2, minmax(0, 1fr))',
-            lg: temMaiorPagamento ? 'repeat(3, minmax(0, 1fr))' : 'repeat(2, minmax(0, 1fr))',
-          },
-          gap: { xs: 2, sm: 2.5 },
-          alignItems: 'start', // Abrir uma explicação não estica os vizinhos
-        }}
-      >
-        <CartaoIndicador
-          id="indicador-total"
-          rotulo="Total empenhado no mês"
-          Icone={AccountBalanceWalletRoundedIcon}
-          cor="#a20000"
-          valor={formatarMoedaExtenso(valorTotal)}
-          valorAcessivel={formatarMoeda(valorTotal)}
-          complemento={
-            <>
-              Valor exato:{' '}
-              <Box component="span" sx={{ fontWeight: 600, color: 'text.primary', fontVariantNumeric: 'tabular-nums' }}>
-                {formatarMoeda(valorTotal)}
-              </Box>
-            </>
-          }
-          explicacao={
-            `Empenho é a reserva de dinheiro no orçamento para uma despesa: a prefeitura se compromete a pagar. ` +
-            `Não significa que o dinheiro já saiu do caixa. O total soma empenhos e reforços e desconta as anulações do período. ` +
-            `Para dar uma ideia de escala: esse valor equivale a ${formatarEmSalariosMinimos(valorTotal)}.`
-          }
-        />
-
-        <CartaoIndicador
-          id="indicador-registros"
-          rotulo="Documentos analisados"
-          Icone={ReceiptLongRoundedIcon}
-          cor="#0369A1"
-          valor={formatarInteiro(totalRegistros)}
-          valorAcessivel={`${formatarInteiro(totalRegistros)} documentos`}
-          complemento={
-            <>
-              Notas de empenho, reforços e anulações publicadas pelo{' '}
-              <Box component="span" sx={{ whiteSpace: 'nowrap' }}>TCE-SP</Box>
-            </>
-          }
-          explicacao="Cada documento é um registro oficial publicado pelo Tribunal de Contas do Estado de São Paulo. O GovTrace lê todos eles para montar as análises desta página."
-        />
-
-        {temMaiorPagamento && (
-          <CartaoIndicador
-            id="indicador-maior"
-            rotulo="Maior valor único"
-            Icone={PaymentsRoundedIcon}
-            cor="#7C3AED"
-            valor={formatarMoedaExtenso(maiorPagamento.valor)}
-            valorAcessivel={formatarMoeda(maiorPagamento.valor)}
-            complemento={
-              <>
-                <Box component="span" sx={{ display: 'block', fontWeight: 600, color: 'text.primary', overflowWrap: 'anywhere' }}>
-                  {maiorPagamento.fornecedorNome}
-                </Box>
-                {maiorPagamento.data && `Em ${maiorPagamento.data}`}
-                {maiorPagamento.documento && (
-                  <>
-                    {' · '}
-                    <Box component="span" sx={{ whiteSpace: 'nowrap' }}>Doc. {maiorPagamento.documento}</Box>
-                  </>
-                )}
-              </>
-            }
-            explicacao="É o registro individual de maior valor no período. Valores altos não indicam irregularidade: obras e contratos anuais costumam gerar empenhos grandes. Serve como ponto de partida para quem quer investigar."
-          />
-        )}
       </Box>
 
-      {/* ── Concentração de mercado ──────────────────────────────────────── */}
-      {concentracao && (
-        <Box sx={{ mt: { xs: 2, sm: 2.5 } }}>
-          <CartaoConcentracao concentracao={concentracao} />
-        </Box>
-      )}
+      {/* Explicação fora do quadro escuro: o botão usa a cor da marca */}
+      <Box sx={{ px: { xs: 0.5, sm: 1 } }}>
+        <ExplicacaoCidada rotulo="Entenda estes números">
+          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, mb: 1.25 }}>
+            <strong>Empenho</strong> é a reserva de dinheiro no orçamento para uma despesa: a prefeitura
+            se compromete a pagar. Não significa que o dinheiro já saiu do caixa. O total soma empenhos
+            e reforços e desconta as anulações do período.
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, mb: 1.25 }}>
+            <strong>O caminho do dinheiro</strong> tem três etapas: empenhado (reservado), liquidado
+            (serviço ou produto confirmado) e pago (saiu do caixa). Elas não são somadas entre si, porque o
+            mesmo valor passa pelas três. Um pagamento deste mês pode quitar um empenho de meses anteriores;
+            por isso o valor pago pode ser maior que o empenhado.
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7, mb: 1.25 }}>
+            <strong>Empenhos no período</strong> conta cada documento uma vez só, mesmo que ele apareça em
+            várias etapas nos registros publicados pelo Tribunal de Contas do Estado de São Paulo.
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
+            <strong>Maior valor único</strong> é o documento de maior valor no período. Valores altos
+            costumam vir de obras e contratos anuais; ele serve como ponto de partida para consulta.
+          </Typography>
+        </ExplicacaoCidada>
+      </Box>
     </Box>
   );
 }

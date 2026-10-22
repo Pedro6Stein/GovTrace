@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 
 import Palco from './Palco';
-import { CORES_PALCO as C } from './coresPalco';
+import { CORES_PALCO as C } from '../../../tema/coresPalco';
 
 const MotionRect = motion.rect;
 const MotionPath = motion.path;
@@ -9,7 +9,7 @@ const MotionPath = motion.path;
 const ALTURA = 260;
 
 /**
- * Cena do Índice CR5: 100 quadradinhos = R$ 100 gastos no mês. Os que
+ * Cena do Índice CR5: 100 quadradinhos = R$ 100 pagos no mês. Os que
  * acendem, um a um, são a parte que foi para os 5 maiores credores. A linha
  * tracejada marca a referência de destaque (30 de 100).
  *
@@ -22,7 +22,7 @@ export default function CenaGradeCR5({ percentual, destaque, limite }) {
   const acesos = Math.max(0, Math.min(100, Math.round(Number(percentual) || 0)));
   const cor = destaque ? C.amarelo : C.azul;
 
-  const descricao = `Grade de 100 quadradinhos, cada um representando R$ 1 de cada R$ 100 gastos. ${acesos} estão coloridos: é a parte que foi para os 5 maiores credores. A linha tracejada marca a referência de ${limite}.`;
+  const descricao = `Grade de 100 quadradinhos, cada um representando R$ 1 de cada R$ 100 pagos no mês. ${acesos} estão coloridos: é a parte que foi para os 5 maiores credores. A linha tracejada marca a referência de ${limite}.`;
   const legenda = [
     { cor, rotulo: `5 maiores credores: cerca de ${acesos} de cada 100`, forma: 'quadrado' },
     { cor: '#475569', rotulo: 'Demais credores', forma: 'quadrado' },

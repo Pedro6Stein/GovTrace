@@ -29,7 +29,7 @@ import { formatarPeriodo } from '../../utilitarios/formatadores';
  *   insights            resultados dos motores (GovTrace API)
  *   despesas            registros normalizados do período
  *   ranking             credores com área CNAE (quando classificados)
- *   totais              { valorTotal, ... }
+ *   totais              { porEtapa: { pago }, ... } — base do CR5
  *   filtros             { municipio, ano, mes }
  *   aoLocalizarEmpenho  (documento) => abre a Base de Lançamentos filtrada
  */
@@ -46,7 +46,7 @@ export default function PainelLaboratorio({ insights, despesas, ranking, totais,
       zScore: trilhaZScore(insights.zScore, setores),
       fracionamento: trilhaRecorrencia(insights.fracionamento, lista, setores),
       monopolio: trilhaConcentracaoSetorial(insights.monopolio, lista, setores),
-      concentracao: trilhaCR5(insights.concentracao, lista, totais?.valorTotal ?? 0, setores),
+      concentracao: trilhaCR5(insights.concentracao, lista, totais?.porEtapa?.pago ?? totais?.valorTotal ?? 0, setores),
       benford: null,
     };
   }, [insights, despesas, ranking, totais]);
