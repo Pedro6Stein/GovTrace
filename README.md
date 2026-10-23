@@ -2,7 +2,7 @@
 
 # 🏛️ GovTrace — Transparência Pública para Todos
 
-**Auditoria contínua e cidadã das despesas públicas municipais de São Paulo, com dados oficiais do TCE-SP.**
+**Acompanhamento cidadão das despesas públicas municipais de São Paulo, com dados oficiais do TCE-SP.**
 
 [![Demo](https://img.shields.io/badge/demo-gov--trace.vercel.app-a20000?style=for-the-badge&logo=vercel&logoColor=white)](https://gov-trace.vercel.app)
 [![API](https://img.shields.io/badge/API-GovTrace--API-1E293B?style=for-the-badge&logo=nodedotjs&logoColor=white)](https://github.com/Pedro6Stein/Govtrace-Api)
@@ -31,6 +31,7 @@
 - [Telas](#-telas)
 - [Arquitetura](#-arquitetura)
 - [Decisões de engenharia](#-decisões-de-engenharia)
+- [Engenharia de software](#-engenharia-de-software)
 - [Tecnologias](#-tecnologias)
 - [Instalação](#-instalação)
 - [Estrutura de pastas](#-estrutura-de-pastas)
@@ -48,14 +49,14 @@ O Tribunal de Contas do Estado de São Paulo (TCE-SP) publica milhares de notas 
 O **GovTrace** transforma esse volume de registros em **informação compreensível para qualquer cidadão**. Você escolhe o município e o período, e o sistema:
 
 1. consulta os dados oficiais do TCE-SP (por meio da [GovTrace API](https://github.com/Pedro6Stein/Govtrace-Api));
-2. aplica **motores estatísticos de auditoria** (Z-Score, Lei de Benford, Fracionamento, Monopólio e Concentração CR5);
+2. aplica **cinco métodos estatísticos** (Z-Score, recorrência de valores, concentração por área, participação dos 5 maiores fornecedores — CR5 — e Lei de Newcomb-Benford);
 3. apresenta os resultados em uma interface em que **o dado é o protagonista** e a explicação em linguagem cidadã fica a um clique de distância.
 
-> ⚖️ **Princípio de neutralidade:** o GovTrace não acusa ninguém. Os algoritmos apontam **padrões estatísticos incomuns** ("Pontos para Análise"), nunca conclusões jurídicas. A interpretação final é sempre humana.
+> ⚖️ **Princípio de neutralidade:** o GovTrace não acusa ninguém. Os métodos apontam **destaques estatísticos** (onde os números se comportam diferente da maioria), nunca conclusões jurídicas. No Laboratório Matemático, os credores aparecem só com uma identidade anônima. A interpretação final cabe aos órgãos de controle.
 
 ## 🌱 Visão e propósito
 
-O GovTrace é um **projeto acadêmico em constante evolução**, construído desde o início com **foco em escalabilidade**: front-end e back-end são desacoplados, a lógica de auditoria vive em um domínio isolado e cada camada pode crescer de forma independente.
+O GovTrace é um **projeto acadêmico em constante evolução**, construído desde o início com **foco em escalabilidade**: front-end e back-end são desacoplados, a lógica de análise vive em um domínio isolado e cada camada pode crescer de forma independente.
 
 O código é **aberto** com dois objetivos claros:
 
@@ -68,43 +69,47 @@ Queremos **crescer rápido**. Por isso estamos estruturando a base para receber 
 
 | Aba | O que mostra |
 |---|---|
-| 🏛️ **A Cidade** | Total empenhado, maior valor único, concentração de mercado (CR5) e distribuição dos gastos por área pública, classificada pela atividade oficial das empresas (CNAE da Receita Federal) |
-| 🔎 **Exploração** | Ranking dos fornecedores que mais receberam recursos, com drill-down nas notas de cada um |
-| 📈 **Auditoria Algorítmica** | Resultado dos 5 motores estatísticos, com a métrica principal em destaque e os registros que a sustentam |
-| 📄 **Evidências** | Tabela com todos os registros oficiais do período, com busca e filtro por estágio contábil (empenho, liquidação, pagamento, reforço, anulação) |
+| 🏛️ **A Cidade** | Total empenhado no mês, o caminho do dinheiro (empenhado, liquidado e pago, sem somar etapas), maior valor único, participação dos 5 maiores fornecedores (CR5) e divisão dos pagamentos por área pública, classificada pela atividade oficial das empresas (CNAE da Receita Federal) |
+| 🔎 **Exploração** | Ranking dos fornecedores pelo valor pago, com busca por nome, filtro por área e painel com os registros de cada um, agrupados por empenho |
+| 🧪 **Laboratório Matemático** | Cinco cenas animadas, uma por método estatístico, com fórmula passo a passo, imagem para compartilhar e o rastro de cada empenho (credores com identidade anônima) |
+| 📄 **Base de Lançamentos** | Todos os registros oficiais do período, com busca, filtro e soma por etapa (empenho, liquidação, pagamento, reforço, anulação), ordenação e "empenho em foco" |
+| ⚖️ **Comparação** | Duas cidades frente a frente no mesmo período, em um placar com barras espelhadas e explicação de como comparar |
 
 Além disso:
 
 - **Seleção de qualquer um dos 645 municípios paulistas**, com lista carregada dinamicamente da API do IBGE.
 - **Explicação cidadã sob demanda**: cada indicador tem um "Entenda este dado" que revela, em linguagem simples, o que o número significa e qual método o gerou.
-- **Modal de Metodologia** documentando os critérios científicos de cada motor.
+- **Carregamento animado** com o logotipo do GovTrace desenhado enquanto os dados do TCE-SP são consultados.
+- **Metodologia** e **Acessibilidade** documentadas dentro do próprio site.
 
 ## 🖼️ Telas
 
 ### Tela inicial: seleção de município e período
 ![Tela inicial com seletor de município, ano e mês](./docs/assets/00-inicio.png)
 
-### A Cidade: visão macro do período
-![Aba A Cidade com total empenhado, registros analisados, CR5 e distribuição por área](./docs/assets/01-cidade.png)
+### Carregamento: o logotipo desenhado enquanto os dados chegam
+![Tela de carregamento com o logotipo do GovTrace animado](./docs/assets/08-carregamento.png)
 
-### Exploração: ranking de fornecedores
-![Aba Exploração com o ranking dos maiores fornecedores do período](./docs/assets/02-exploracao.png)
+### A Cidade: panorama do mês
+![Aba A Cidade com o total empenhado, as etapas empenhado, liquidado e pago, e os blocos de apoio](./docs/assets/01-cidade.png)
 
-### Auditoria Algorítmica: motores estatísticos
-![Aba Auditoria Algorítmica com os cards de Z-Score, Fracionamento, Monopólio, CR5 e Benford](./docs/assets/03-auditoria.png)
+### Exploração: quem mais recebeu
+![Aba Exploração com o ranking dos fornecedores pelo valor pago, busca e filtro por área](./docs/assets/02-exploracao.png)
 
-### Explicação cidadã: divulgação progressiva
-![Card de auditoria com a explicação cidadã expandida](./docs/assets/04-explicacao-cidada.png)
+### Registros de um fornecedor
+![Painel lateral com o caminho do dinheiro e os empenhos de um fornecedor](./docs/assets/04-registros-fornecedor.png)
 
-### Evidências: registros oficiais rastreáveis
-![Aba Evidências com a tabela de registros brutos e filtros por estágio contábil](./docs/assets/05-evidencias.png)
+### Laboratório Matemático: cenas animadas
+![Laboratório Matemático com a cena da Curva Z-Score e o rastro do empenho](./docs/assets/03-laboratorio.png)
+
+### Base de Lançamentos: empenho em foco
+![Base de Lançamentos com um empenho em foco e a linha do tempo das etapas](./docs/assets/05-lancamentos.png)
+
+### Comparação entre cidades
+![Placar comparando Bragança Paulista e Atibaia no mesmo período](./docs/assets/06-comparacao.png)
 
 ### Experiência mobile
-<p align="center">
-  <img src="./docs/assets/06-mobile-cidade.png" alt="GovTrace no celular: aba A Cidade" width="280" />
-  &nbsp;&nbsp;
-  <img src="./docs/assets/07-mobile-auditoria.png" alt="GovTrace no celular: aba Auditoria Algorítmica" width="280" />
-</p>
+![GovTrace no celular: A Cidade, Exploração e Base de Lançamentos](./docs/assets/07-celular.png)
 
 ## 🧱 Arquitetura
 
@@ -120,20 +125,22 @@ flowchart LR
 
     subgraph Render
       A[GovTrace API<br/>Node.js + Express]
-      D[[Domínio de Auditoria<br/>Z-Score · Benford · Fracionamento<br/>Monopólio · CR5 · Categorização]]
+      D[[Domínio de análise<br/>Z-Score · Recorrência · Concentração por área<br/>CR5 · Benford · Classificação CNAE]]
       A --> D
     end
 
     F -- "GET /api/analise?municipio&ano&mes" --> A
     A -- axios --> T[(API de Transparência<br/>TCE-SP)]
+    A -- CNPJ → CNAE --> B[(BrasilAPI)]
     F -- municípios --> I[(API de Localidades<br/>IBGE)]
+    A -- nome da atividade --> I
     F <-. cache de sessão .-> S[(sessionStorage)]
 ```
 
 **Por que desacoplar?** Na primeira versão (monólito front-end), o navegador do cidadão baixava milhares de registros brutos e executava toda a estatística localmente. Ao mover a lógica para o back-end:
 
 - o front ficou **mais leve e mais rápido**, com cerca de 600 linhas de lógica removidas do cliente;
-- as regras de auditoria passaram a ter **uma única fonte da verdade**, testável isoladamente;
+- as regras de análise passaram a ter **uma única fonte da verdade**, testável isoladamente;
 - a mesma API pode alimentar no futuro **outros clientes** (app mobile, bots, dados abertos para jornalistas).
 
 ## 🛠️ Decisões de engenharia
@@ -146,7 +153,15 @@ A implementação foi pensada para **nunca derrubar a experiência**:
 
 - **Tolerante a cota cheia:** cada análise ocupa cerca de 1 MB, e o `sessionStorage` tem limite de aproximadamente 5 MB. Leitura e escrita ficam protegidas por `try/catch`; se o cache estiver cheio ou corrompido, a consulta segue normalmente pela rede.
 - **Escopo de sessão:** o cache expira sozinho ao fechar a aba, então o cidadão sempre recebe dados atualizados em uma nova visita.
-- **Chave determinística:** `govtrace_analise_{municipio}_{ano}_{mes}`.
+- **Chave determinística e versionada:** `govtrace_analise_v2_{municipio}_{ano}_{mes}`. O `v2` invalida respostas guardadas no formato antigo sempre que o contrato da API muda.
+
+### 🧮 Uma base para cada pergunta (sem dupla contagem)
+
+O TCE-SP publica uma linha para cada etapa do mesmo empenho (empenho, liquidação, pagamento). Somar todas as linhas contaria o mesmo dinheiro até três vezes. Por isso, a API usa uma base para cada pergunta: o total do mês mostra cada etapa separada; o ranking, a divisão por área e o CR5 usam só os pagamentos; e os métodos estatísticos contam cada empenho uma vez. No site, a soma da Base de Lançamentos só aparece com uma etapa escolhida.
+
+### 🎬 Motion com propósito e carregamento sob demanda
+
+As animações explicam a informação (o logotipo desenhado durante a consulta, números que contam até o valor real, barras que crescem, a linha do tempo de um empenho) e são desligadas quando o sistema pede menos movimento. O Laboratório Matemático (Framer Motion) e a fórmula passo a passo (KaTeX) só são carregados quando o usuário abre essas telas, para não pesar a primeira visita.
 
 ### 🏁 Proteção contra *race conditions*
 
@@ -158,6 +173,11 @@ Se o usuário troca de filtro enquanto uma consulta ainda está em andamento, a 
 - **Divulgação progressiva:** o componente `ExplicacaoCidada` centraliza o padrão "botão + Collapse". O número aparece primeiro e a explicação vem quando o usuário pede.
 - **Acessibilidade (ARIA):** os botões de expansão expõem `aria-expanded` e `aria-controls`. Tooltips, que não funcionam bem com toque nem com teclado, foram substituídos por conteúdo expansível.
 - **Design system tonal** com a paleta institucional da FATEC, definido em um tema MUI único (`src/tema/tema.js`).
+- **No celular**, a tabela da Base de Lançamentos vira um cartão por registro e a Comparação mantém as duas cidades lado a lado, sem rolagem lateral.
+
+## 📚 Engenharia de software
+
+A documentação completa de engenharia de software do GovTrace (site e API) está em **[docs/engenharia](./docs/engenharia/README.md)**: visão geral, requisitos funcionais e não funcionais, regras de negócio, casos de uso detalhados, diagramas UML (casos de uso, sequência, atividades, estados, classes, componentes e implantação), contrato da API, modelo de dados, decisões de arquitetura, plano de testes, matriz de rastreabilidade, riscos e gestão de configuração.
 
 ## 🧰 Tecnologias
 
@@ -165,7 +185,9 @@ Se o usuário troca de filtro enquanto uma consulta ainda está em andamento, a 
 |---|---|
 | UI | [React 19](https://react.dev/) |
 | Build / Dev server | [Vite 6](https://vite.dev/) |
-| Componentes e tema | [Material UI 6](https://mui.com/) + [Emotion](https://emotion.sh/) |
+| Componentes e tema | [Material UI 6](https://mui.com/) + [Emotion](https://emotion.sh/) · fonte [Inter](https://rsms.me/inter/) auto-hospedada |
+| Animações | CSS (keyframes) e [Framer Motion](https://motion.dev/) no Laboratório Matemático |
+| Fórmulas e imagens | [KaTeX](https://katex.org/) (fórmula passo a passo) · [html-to-image](https://github.com/bubkoo/html-to-image) (imagem para compartilhar) |
 | Dados | [GovTrace API](https://github.com/Pedro6Stein/Govtrace-Api) · [API de Localidades do IBGE](https://servicodados.ibge.gov.br/api/docs/localidades) |
 | Qualidade | ESLint 9 (react-hooks, react-refresh) |
 | Deploy | [Vercel](https://vercel.com/) |
@@ -223,34 +245,47 @@ VITE_API_URL=http://localhost:3333/api/analise
 ```
 src/
 ├── componentes/
-│   ├── abaCidade/          # HeroCidade, GraficoDestino
-│   ├── abaExploracao/      # RankingFornecedores, DrawerEvidencias
-│   ├── abaAuditoria/       # PainelAuditoria, CardAlerta
-│   ├── abaEvidencias/      # TabelaEvidenciasAvancada
-│   ├── ExplicacaoCidada/   # Padrão reutilizável de divulgação progressiva
-│   ├── SeletorPeriodo/     # Município (IBGE) + ano + mês
-│   ├── ModalMetodologia/   # Documentação científica dos motores
-│   └── ...                 # Cabecalho, Rodape, Sobre, SkeletonPainel
-├── paginas/Painel/         # Orquestra filtros, estado e as 4 abas
+│   ├── abaCidade/               # HeroCidade, GraficoDestino (rosca), CartaoConcentracao, áreas
+│   ├── abaExploracao/           # RankingFornecedores, DrawerRegistros, LinhaEtapas
+│   ├── abaLaboratorio/          # PainelLaboratorio, cenas animadas, TrilhaEmpenho, compartilhar
+│   ├── abaLancamentos/          # TabelaLancamentos (tabela no computador, cartões no celular)
+│   ├── abaComparacao/           # ComparacaoMunicipios (placar A × B)
+│   ├── CarregamentoGovTrace/    # Carregamento animado com o logotipo
+│   ├── ProvaMatematica/         # Fórmula passo a passo (KaTeX, carregada sob demanda)
+│   ├── ExplicacaoCidada/        # Padrão reutilizável de divulgação progressiva
+│   ├── SeletorPeriodo/          # Município (IBGE) + ano + mês
+│   ├── ModalMetodologia/        # Como cada método é calculado
+│   ├── ModalAcessibilidade/     # Declaração de acessibilidade
+│   └── ...                      # Cabecalho, Rodape, Sobre, ContornoErro, TermometroRisco
+├── paginas/Painel/              # Orquestra filtros, estado e as 5 abas
 ├── servicos/
-│   ├── apiGovtrace.js      # Cliente da GovTrace API + cache de sessão
-│   └── ibge.js             # Lista de municípios de SP
-├── dados/configuracoes.js  # Configurações exclusivas de UI (anos/meses)
-└── tema/tema.js            # Design system (paleta, tipografia, overrides MUI)
+│   ├── apiGovtrace.js           # Cliente da GovTrace API + cache de sessão
+│   └── ibge.js                  # Lista de municípios de SP
+├── utilitarios/                 # Formatadores, tradutor cívico, contagem animada
+├── dados/configuracoes.js       # Configurações exclusivas de UI (anos/meses)
+└── tema/                        # Design system (tema MUI e cores do Laboratório)
+docs/
+├── assets/                      # Prints usados neste README
+└── engenharia/                  # Documento de engenharia de software
 ```
 
 ## 🗺️ Roadmap
 
-- [x] Painel cidadão com 4 abas progressivas
-- [x] Motores estatísticos de auditoria
+- [x] Painel cidadão com 5 abas
+- [x] Cinco métodos estatísticos com explicação cidadã
 - [x] Arquitetura desacoplada (Front React + API Node.js)
 - [x] Cache de sessão e cancelamento de requisições
-- [ ] Série histórica: comparação entre meses e anos
-- [ ] Code-splitting por aba para reduzir o bundle inicial
+- [x] Classificação oficial por atividade econômica (CNAE)
+- [x] Laboratório Matemático com identidade anônima dos credores
+- [x] Comparação entre municípios e imagem para compartilhar
+- [x] Carregamento sob demanda das partes pesadas (Laboratório e fórmulas)
+- [x] Contagem por etapa, sem somar o mesmo dinheiro mais de uma vez
+- [ ] Série histórica: comparação entre meses e anos (pedida por 92,6% no questionário do TCC)
+- [ ] Valores por habitante, para comparar cidades de tamanhos diferentes
 - [ ] Exportação de relatórios (PDF/CSV)
 - [ ] Compartilhamento de análises por link (filtros na URL)
 - [ ] Testes automatizados de componentes
-- [ ] Modo escuro e auditoria de acessibilidade (WCAG 2.1 AA)
+- [ ] Modo escuro
 
 ## 🤝 Como contribuir
 
