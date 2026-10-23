@@ -163,6 +163,7 @@ export default function Rodape() {
                 <li><LinkExterno href="https://transparencia.tce.sp.gov.br/">Portal do TCE-SP</LinkExterno></li>
                 <li><LinkExterno href="https://github.com/Pedro6Stein/GovTrace">Código do site</LinkExterno></li>
                 <li><LinkExterno href="https://github.com/Pedro6Stein/Govtrace-Api">Código da API</LinkExterno></li>
+                <li><LinkExterno href="https://github.com/Pedro6Stein/GovTrace/blob/master/docs/engenharia/README.md">Engenharia de software</LinkExterno></li>
               </Stack>
             </Box>
           </Box>

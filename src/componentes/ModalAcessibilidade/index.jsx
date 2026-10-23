@@ -26,12 +26,13 @@ const RECURSOS = [
   ['Leitores de tela', 'Títulos hierárquicos, abas e explicações anunciam seu estado (aberto ou fechado). Valores abreviados são lidos por extenso.'],
   ['Toque', 'Botões e controles com área de toque de pelo menos 44 pixels.'],
   ['Zoom', 'O layout se adapta até 320 pixels de largura e a 200% de zoom, sem rolagem horizontal.'],
+  ['Celular', 'Na Base de Lançamentos, a tabela vira um cartão por registro, e a Comparação mantém as duas cidades lado a lado, com os números sempre visíveis.'],
   ['Movimento', 'Se o seu sistema estiver configurado para reduzir animações, o GovTrace desliga as transições.'],
   ['Linguagem', 'Cada número tem uma explicação em linguagem simples no botão "Entenda este dado".'],
 ];
 
 const LIMITACOES = [
-  'A tabela da aba "Base de Lançamentos" tem muitas colunas e pode exigir rolagem lateral em telas pequenas.',
+  'No celular, os filtros por área (Exploração) e por etapa (Base de Lançamentos) ficam em uma faixa que desliza para o lado. Todos continuam acessíveis pelo teclado.',
   'A classificação das despesas por área usa a atividade oficial das empresas (CNAE), mas pagamentos a pessoas físicas e algumas atividades mistas ainda são estimados pelo nome do fornecedor. As áreas podem divergir da classificação contábil do orçamento.',
 ];
 
