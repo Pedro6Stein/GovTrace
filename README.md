@@ -52,7 +52,7 @@ O **GovTrace** transforma esse volume de registros em **informação compreensí
 2. aplica **cinco métodos estatísticos** (Z-Score, recorrência de valores, concentração por área, participação dos 5 maiores fornecedores — CR5 — e Lei de Newcomb-Benford);
 3. apresenta os resultados em uma interface em que **o dado é o protagonista** e a explicação em linguagem cidadã fica a um clique de distância.
 
-> ⚖️ **Princípio de neutralidade:** o GovTrace não acusa ninguém. Os métodos apontam **destaques estatísticos** (onde os números se comportam diferente da maioria), nunca conclusões jurídicas. No Laboratório Matemático, os credores aparecem só com uma identidade anônima. A interpretação final cabe aos órgãos de controle.
+> ⚖️ **Princípio de neutralidade:** o GovTrace não acusa ninguém. Os métodos apontam **destaques estatísticos** (onde os números se comportam diferente da maioria), nunca conclusões jurídicas. O Laboratório Matemático descreve o conjunto do mês e não aponta pessoas, empresas ou documentos. A interpretação final cabe aos órgãos de controle.
 
 ## 🌱 Visão e propósito
 
@@ -71,7 +71,7 @@ Queremos **crescer rápido**. Por isso estamos estruturando a base para receber 
 |---|---|
 | 🏛️ **A Cidade** | Total empenhado no mês, o caminho do dinheiro (empenhado, liquidado e pago, sem somar etapas), maior valor único, participação dos 5 maiores fornecedores (CR5) e divisão dos pagamentos por área pública, classificada pela atividade oficial das empresas (CNAE da Receita Federal) |
 | 🔎 **Exploração** | Ranking dos fornecedores pelo valor pago, com busca por nome, filtro por área e painel com os registros de cada um, agrupados por empenho |
-| 🧪 **Laboratório Matemático** | Cinco cenas animadas, uma por método estatístico, com fórmula passo a passo, imagem para compartilhar e o rastro de cada empenho (credores com identidade anônima) |
+| 🧪 **Laboratório Matemático** | Cinco cenas animadas, uma por método estatístico, com fórmula passo a passo, imagem para compartilhar e o bloco "Como ler este destaque": peso do destaque no mês, divisão por área e causas comuns do padrão |
 | 📄 **Base de Lançamentos** | Todos os registros oficiais do período, com busca, filtro e soma por etapa (empenho, liquidação, pagamento, reforço, anulação), ordenação e "empenho em foco" |
 | ⚖️ **Comparação** | Duas cidades frente a frente no mesmo período, em um placar com barras espelhadas e explicação de como comparar |
 
@@ -100,7 +100,7 @@ Além disso:
 ![Painel lateral com o caminho do dinheiro e os empenhos de um fornecedor](./docs/assets/04-registros-fornecedor.png)
 
 ### Laboratório Matemático: cenas animadas
-![Laboratório Matemático com a cena da Curva Z-Score e o rastro do empenho](./docs/assets/03-laboratorio.png)
+![Laboratório Matemático com a cena da Curva Z-Score e o bloco Como ler este destaque](./docs/assets/03-laboratorio.png)
 
 ### Base de Lançamentos: empenho em foco
 ![Base de Lançamentos com um empenho em foco e a linha do tempo das etapas](./docs/assets/05-lancamentos.png)
@@ -247,7 +247,7 @@ src/
 ├── componentes/
 │   ├── abaCidade/               # HeroCidade, GraficoDestino (rosca), CartaoConcentracao, áreas
 │   ├── abaExploracao/           # RankingFornecedores, DrawerRegistros, LinhaEtapas
-│   ├── abaLaboratorio/          # PainelLaboratorio, cenas animadas, TrilhaEmpenho, compartilhar
+│   ├── abaLaboratorio/          # PainelLaboratorio, cenas animadas, LeituraDestaque, compartilhar
 │   ├── abaLancamentos/          # TabelaLancamentos (tabela no computador, cartões no celular)
 │   ├── abaComparacao/           # ComparacaoMunicipios (placar A × B)
 │   ├── CarregamentoGovTrace/    # Carregamento animado com o logotipo
@@ -276,7 +276,7 @@ docs/
 - [x] Arquitetura desacoplada (Front React + API Node.js)
 - [x] Cache de sessão e cancelamento de requisições
 - [x] Classificação oficial por atividade econômica (CNAE)
-- [x] Laboratório Matemático com identidade anônima dos credores
+- [x] Laboratório Matemático que descreve padrões sem apontar casos ("Como ler este destaque")
 - [x] Comparação entre municípios e imagem para compartilhar
 - [x] Carregamento sob demanda das partes pesadas (Laboratório e fórmulas)
 - [x] Contagem por etapa, sem somar o mesmo dinheiro mais de uma vez
