@@ -5,7 +5,7 @@ import ReplayRoundedIcon from '@mui/icons-material/ReplayRounded';
 import ShareRoundedIcon from '@mui/icons-material/ShareRounded';
 
 import ChipStatus from './ChipStatus';
-import TrilhaEmpenho from './TrilhaEmpenho';
+import LeituraDestaque from './LeituraDestaque';
 import { LIMITE_CR5, MOTOR_CONFIG, explicarCena, extrairMetrica } from './motores';
 import CenaAgrupamento from './cenas/CenaAgrupamento';
 import CenaBalanca from './cenas/CenaBalanca';
@@ -23,18 +23,19 @@ const DialogoCompartilhar = lazy(() => import('./DialogoCompartilhar'));
  * CartaoCena — uma pergunta, uma cena animada e a explicação ao lado.
  *
  * Ordem de leitura pensada para o "teste da avó": a pergunta em português
- * comum, a cena, "como ler esta cena" com os números reais e, por fim, o
- * rastro dos documentos públicos para quem quiser conferir.
+ * comum, a cena, "como ler esta cena" com os números reais e, por fim,
+ * "como ler este destaque": o peso do destaque no mês e as causas comuns.
+ * O cartão nunca aponta um documento, pessoa ou empresa.
  *
  * Props:
- *   tipo     chave do motor (ver ORDEM_MOTORES)
- *   dados    resultado do motor na GovTrace API
- *   trilha   modelo de exibição já pseudonimizado (rastro.js)
- *   extras   { zDestaques } — dados derivados para a cena
- *   filtros  { municipio, ano, mes }
- *   acoes    { localizar, copiarEAbrir }
+ *   tipo       chave do motor (ver ORDEM_MOTORES)
+ *   dados      resultado do motor na GovTrace API
+ *   dadosCena  números agregados para a animação (dadosCenas.js)
+ *   leitura    retrato agregado do destaque (leitura.js) ou null
+ *   extras     { zDestaques } — dados derivados para a cena
+ *   filtros    { municipio, ano, mes }
  */
-export default function CartaoCena({ tipo, dados, trilha, extras, filtros, acoes }) {
+export default function CartaoCena({ tipo, dados, dadosCena, leitura, extras, filtros }) {
   const [repeticao, setRepeticao] = useState(0);
   const [compartilharAberto, setCompartilharAberto] = useState(false);
 
@@ -126,7 +127,7 @@ export default function CartaoCena({ tipo, dados, trilha, extras, filtros, acoes
           }}
         >
           <Box key={repeticao} sx={{ minWidth: 0 }}>
-            <Cena tipo={tipo} dados={dados} trilha={trilha} extras={extras} />
+            <Cena tipo={tipo} dados={dados} dadosCena={dadosCena} extras={extras} />
           </Box>
 
           <Box sx={{ minWidth: 0 }}>
@@ -164,8 +165,8 @@ export default function CartaoCena({ tipo, dados, trilha, extras, filtros, acoes
           </Box>
         </Box>
 
-        {/* ── Rastro dos documentos públicos ──────────────────────────── */}
-        <TrilhaEmpenho tipo={tipo} trilha={trilha} acoes={acoes} />
+        {/* ── O destaque no conjunto do mês + causas comuns ─────────────── */}
+        <LeituraDestaque leitura={leitura} cor={cfg.cor} fundo={cfg.fundo} idBase={`cena-${tipo}`} />
 
         <ExplicacaoCidada rotulo="Como a conta é feita">
           <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.7 }}>
@@ -191,16 +192,16 @@ export default function CartaoCena({ tipo, dados, trilha, extras, filtros, acoes
   );
 }
 
-function Cena({ tipo, dados, trilha, extras }) {
+function Cena({ tipo, dados, dadosCena, extras }) {
   switch (tipo) {
     case 'zScore':
       return <CenaCurvaNormal limite={dados.estatisticas?.limite ?? 4} zDestaques={extras?.zDestaques ?? []} />;
     case 'benford':
       return <CenaBenford frequencias={dados.frequencias} digitoDestaque={dados.digitoSuspeito ?? null} />;
     case 'fracionamento':
-      return <CenaAgrupamento grupos={trilha ?? []} />;
+      return <CenaAgrupamento grupos={dadosCena ?? []} />;
     case 'monopolio':
-      return <CenaBalanca areas={(trilha ?? []).map(({ area, percentual }) => ({ area, percentual }))} />;
+      return <CenaBalanca areas={dadosCena ?? []} />;
     case 'concentracao':
       return <CenaGradeCR5 percentual={dados.percentual} destaque={Boolean(dados.alerta)} limite={LIMITE_CR5} />;
     default:

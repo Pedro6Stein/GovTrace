@@ -119,8 +119,8 @@ export default function Painel() {
   const [abaAtiva, setAbaAtiva] = useState(0);
   const refAbas = useRef(null);
 
-  // "Seguir o rastro do empenho": o Laboratório pede, a Base de Lançamentos
-  // abre já filtrada por esse número de empenho
+  // Empenho em foco: os registros de um fornecedor (Exploração) ou a própria
+  // Base de Lançamentos pedem, e a Base abre já filtrada por esse número
   const [empenhoEmFoco, setEmpenhoEmFoco] = useState(null);
 
   // Estado de ciclo de vida da requisição (erro guarda a mensagem real da API)
@@ -439,8 +439,8 @@ function ConteudoAba({ id, props }) {
               despesas={props.dadosBrutos}
               ranking={props.ranking}
               totais={props.totais}
+              distribuicao={props.distribuicao}
               filtros={props.filtros}
-              aoLocalizarEmpenho={props.aoLocalizarEmpenho}
             />
           </Suspense>
         </ContornoErro>

@@ -1,79 +1,57 @@
-import { useMemo, useState } from 'react';
-import { Alert, Box, Card, CardContent, Chip, Divider, Snackbar, Stack, Typography } from '@mui/material';
+import { useMemo } from 'react';
+import { Box, Card, CardContent, Chip, Divider, Stack, Typography } from '@mui/material';
 
 import ScienceRoundedIcon from '@mui/icons-material/ScienceRounded';
 import VisibilityOffRoundedIcon from '@mui/icons-material/VisibilityOffRounded';
 
 import CartaoCena from './CartaoCena';
 import { ORDEM_MOTORES } from './motores';
-import {
-  criarMapaSetores,
-  trilhaConcentracaoSetorial,
-  trilhaCR5,
-  trilhaRecorrencia,
-  trilhaZScore,
-  zDosEmpenhos,
-} from './rastro';
-import { URL_PORTAL_TCE } from '../../dados/configuracoes';
+import { cenaConcentracaoArea, cenaRecorrencia, zDosEmpenhos } from './dadosCenas';
+import { criarMapaSetores, lerDestaque } from './leitura';
 import { formatarPeriodo } from '../../utilitarios/formatadores';
 
 /**
  * PainelLaboratorio — aba "Laboratório Matemático".
  *
  * Cinco cenas animadas explicam o comportamento estatístico dos números do
- * período. Regra da aba: nenhum nome de credor aparece aqui; o destaque é
- * sempre o documento público (número do empenho), com caminho para conferir
- * na Base de Lançamentos ou no portal do TCE-SP.
+ * período. Regra da aba: ela descreve o conjunto do mês e não aponta nenhum
+ * documento, pessoa ou empresa. Cada destaque vem com o seu peso no mês e
+ * as causas mais comuns do padrão ("Como ler este destaque").
  *
  * Props:
- *   insights            resultados dos motores (GovTrace API)
- *   despesas            registros normalizados do período
- *   ranking             credores com área CNAE (quando classificados)
- *   totais              { porEtapa: { pago }, ... } — base do CR5
- *   filtros             { municipio, ano, mes }
- *   aoLocalizarEmpenho  (documento) => abre a Base de Lançamentos filtrada
+ *   insights      resultados dos motores (GovTrace API)
+ *   despesas      registros normalizados do período
+ *   ranking       credores com área CNAE (quando classificados)
+ *   totais        { totalEmpenhos, porEtapa, ... }
+ *   distribuicao  divisão dos pagamentos por área (peso de cada área no mês)
+ *   filtros       { municipio, ano, mes }
  */
-export default function PainelLaboratorio({ insights, despesas, ranking, totais, filtros, aoLocalizarEmpenho }) {
-  const [aviso, setAviso] = useState({ aberto: false, tipo: 'info', texto: '' });
-
-  // Toda a pseudonimização acontece aqui, uma vez: daqui para baixo nenhum
-  // componente recebe o nome de um credor.
-  const trilhas = useMemo(() => {
+export default function PainelLaboratorio({ insights, despesas, ranking, totais, distribuicao, filtros }) {
+  const cenas = useMemo(() => {
     if (!insights) return null;
-    const setores = criarMapaSetores(ranking);
-    const lista = despesas ?? [];
     return {
-      zScore: trilhaZScore(insights.zScore, setores),
-      fracionamento: trilhaRecorrencia(insights.fracionamento, lista, setores),
-      monopolio: trilhaConcentracaoSetorial(insights.monopolio, lista, setores),
-      concentracao: trilhaCR5(insights.concentracao, lista, totais?.porEtapa?.pago ?? totais?.valorTotal ?? 0, setores),
-      benford: null,
+      fracionamento: cenaRecorrencia(insights.fracionamento, despesas ?? []),
+      monopolio: cenaConcentracaoArea(insights.monopolio),
     };
-  }, [insights, despesas, ranking, totais]);
+  }, [insights, despesas]);
+
+  const leituras = useMemo(() => {
+    if (!insights) return null;
+    const contexto = {
+      despesas: despesas ?? [],
+      setores: criarMapaSetores(ranking),
+      totais,
+      distribuicao: distribuicao ?? [],
+      totalFornecedores: ranking?.length ?? 0,
+    };
+    return Object.fromEntries(ORDEM_MOTORES.map((tipo) => [tipo, lerDestaque(tipo, insights[tipo], contexto)]));
+  }, [insights, despesas, ranking, totais, distribuicao]);
 
   const extras = useMemo(() => ({ zDestaques: zDosEmpenhos(insights?.zScore) }), [insights]);
 
-  if (!insights || !trilhas) return null;
+  if (!insights || !cenas || !leituras) return null;
 
   const totalDestaques = ORDEM_MOTORES.filter((t) => insights[t]?.alerta).length;
-
-  // writeText é chamado antes do window.open, ainda dentro do clique: o
-  // Safari só libera a área de transferência durante o gesto do usuário.
-  const copiarEAbrir = (documento) => {
-    const copia = navigator.clipboard?.writeText
-      ? navigator.clipboard.writeText(documento)
-      : Promise.reject(new Error('Área de transferência indisponível'));
-    window.open(URL_PORTAL_TCE, '_blank', 'noopener,noreferrer');
-    copia.then(
-      () => setAviso({ aberto: true, tipo: 'success', texto: `Empenho nº ${documento} copiado. No portal do TCE-SP, cole o número no campo de busca.` }),
-      () => setAviso({ aberto: true, tipo: 'info', texto: `Não foi possível copiar automaticamente. Anote o empenho nº ${documento} para buscar no portal do TCE-SP.` }),
-    );
-  };
-
-  // Mantém o texto durante a animação de saída do Snackbar
-  const fecharAviso = () => setAviso((atual) => ({ ...atual, aberto: false }));
-
-  const acoes = { localizar: aoLocalizarEmpenho, copiarEAbrir };
 
   return (
     <Stack spacing={3}>
@@ -136,13 +114,13 @@ export default function PainelLaboratorio({ insights, despesas, ranking, totais,
           <VisibilityOffRoundedIcon aria-hidden sx={{ color: '#1D4ED8', mt: 0.25, flexShrink: 0 }} />
           <Box>
             <Typography id="titulo-privacidade" component="h3" sx={{ fontWeight: 700, fontSize: '1.0625rem', color: '#1E3A8A' }}>
-              Por que não exibimos nomes nesta tela?
+              Por que esta tela não mostra nomes nem documentos?
             </Typography>
             <Typography sx={{ mt: 0.75, fontSize: '1rem', color: '#1E293B', lineHeight: 1.65 }}>
-              Nossos modelos matemáticos analisam exclusivamente o comportamento dos números, sem fazer
-              juízo de valor sobre pessoas ou empresas. Para evitar interpretações fora de contexto,
-              destacamos aqui apenas o código oficial do documento público. Você tem total autonomia
-              para investigar a origem usando o código do empenho abaixo.
+              O Laboratório mostra como os números do mês se comportam em conjunto: quanto um padrão
+              representa, em que áreas aparece e por que costuma acontecer. Ele não aponta pessoas,
+              empresas ou documentos, porque um destaque estatístico não é uma conclusão: a análise de
+              cada caso cabe aos órgãos de controle.
             </Typography>
           </Box>
         </Stack>
@@ -154,10 +132,10 @@ export default function PainelLaboratorio({ insights, despesas, ranking, totais,
           key={tipo}
           tipo={tipo}
           dados={insights[tipo]}
-          trilha={trilhas[tipo]}
+          dadosCena={cenas[tipo]}
+          leitura={leituras[tipo]}
           extras={extras}
           filtros={filtros}
-          acoes={acoes}
         />
       ))}
 
@@ -168,17 +146,6 @@ export default function PainelLaboratorio({ insights, despesas, ranking, totais,
           ferramenta acadêmica — FATEC Bragança Paulista, GTI.
         </Typography>
       </Box>
-
-      <Snackbar
-        open={aviso.aberto}
-        autoHideDuration={8000}
-        onClose={fecharAviso}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={fecharAviso} severity={aviso.tipo} variant="filled" sx={{ width: '100%', fontSize: '0.9375rem' }}>
-          {aviso.texto}
-        </Alert>
-      </Snackbar>
     </Stack>
   );
 }

@@ -45,8 +45,10 @@ export default function ModalMetodologia({ aberto, aoFechar }) {
           ponto de partida para consulta, e a interpretação final cabe aos órgãos de controle.
         </Typography>
         <Typography variant="body2" color="text.secondary" paragraph>
-          Na tela do Laboratório, os credores aparecem com uma identidade anônima. O destaque é sempre o
-          número do empenho, que pode ser conferido na Base de Lançamentos ou no portal do TCE-SP.
+          No Laboratório, os resultados aparecem sempre em conjunto: quantos valores foram destacados,
+          quanto representam no mês, em que áreas aparecem e quais são as causas mais comuns. Nenhuma
+          pessoa, empresa ou documento é apontado. Todos os registros oficiais do período estão na Base
+          de Lançamentos, sem nenhum destaque.
         </Typography>
         <Box sx={{ p: 2, borderRadius: '12px', bgcolor: '#F8FAFC', border: '1px solid', borderColor: 'divider' }}>
           <Typography variant="subtitle2" fontWeight={700} gutterBottom>
